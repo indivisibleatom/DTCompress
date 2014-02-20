@@ -390,7 +390,7 @@ class SuccLODMapper
         int lowestCorner = m_refined.c(refinedTriangle);
         m_base.m_tOffsets[i] = offset;
         m_refined.m_tOffsets[refinedTriangle] = offset;
-        if (i == 18)
+        if (i == 238)
         {
            print("Here " + parent.m_refined.m_tOffsets[i] + " " + lowestCorner + "\n");
         }
@@ -476,7 +476,7 @@ class SuccLODMapper
     if (vertexInRefined[1] == -1)
       return -1;
     int triangleInRefined = m_tBaseToRefinedTMap[baseT];
-
+    
     int corner = m_refined.c(triangleInRefined);
     for (int i = 0; i < 3; i++)
     {
@@ -485,6 +485,10 @@ class SuccLODMapper
       {
         if (m_refined.v(currentCorner) == vertexInRefined[i] && m_refined.tm[m_refined.t(m_refined.s(currentCorner))] == CHANNEL && m_refined.tm[m_refined.t(m_refined.s(m_refined.s(currentCorner)))] == ISLAND)
         {
+          if ( baseT == 1 || baseT == 122 || baseT == 53 )
+          {
+            print("\nCorner in refined " + currentCorner + " " + baseT + " " + triangleInRefined + "\n");
+          }
           return currentCorner;
         }
         currentCorner = m_refined.n(currentCorner);
@@ -534,11 +538,19 @@ class SuccLODMapper
       int tBase = m_base.t(i);
       int orderT = getOrderedTriangleNumberInBase( parent, tBase );
       int corner = findCornerInRefined( vertexBase, tBase );
+      if (vertexBase == 2)
+      {
+        print("Order t " + orderT + "tBase " + tBase + " " + corner + " " + minTPerVBase[vertexBase] + "\n");
+      }
       if ( corner != -1 ) //If expandable
       {
         if ( orderT < minTPerVBase[vertexBase] )
         {
-          minTPerVBase[vertexBase] = tBase;
+          if ( vertexBase == 2 )
+          {
+            print("I am here " + orderT + "\n");
+          }
+          minTPerVBase[vertexBase] = orderT;
           cornerRefinedPerVBase[vertexBase] = corner;
         }
       }
