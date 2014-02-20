@@ -1,3 +1,18 @@
+class FutureLODAndVOrder
+{
+  private int m_order;
+  private int m_lod;
+  
+  FutureLODAndVOrder( int lod, int order )
+  {
+    m_order = order;
+    m_lod = lod;
+  }
+  
+  public int orderV() { return m_order; }
+  public int lod() { return m_lod; }
+}
+
 class WorkingMesh extends Mesh
 {
   int[] m_LOD = new int[maxnv]; //LOD per vertex
@@ -20,6 +35,11 @@ class WorkingMesh extends Mesh
     nt = m.nt;
     nc = m.nc;
 
+    m_baseVerts = nv;
+    m_baseTriangles = nt;
+    m_userInputHandler = new WorkingMeshUserInputHandler(this);
+    m_packetFetcher = new PacketFetcher(lodMapperManager);
+
     for (int i = 0; i < m.nt; i++)
     {
       m_orderT[i] = i;
@@ -28,14 +48,25 @@ class WorkingMesh extends Mesh
 
     for (int i = 0; i < m.nv; i++)
     {
-      m_orderV[i] = i;
-      m_LOD[i] = NUMLODS - 1;
+      FutureLODAndVOrder future = getLODAndVOrder( NUMLODS - 1, i );
+      m_LOD[i] = future.lod();
+      m_orderV[i] = future.orderV();
     }
-
-    m_baseVerts = nv;
-    m_baseTriangles = nt;
-    m_userInputHandler = new WorkingMeshUserInputHandler(this);
-    m_packetFetcher = new PacketFetcher(lodMapperManager);
+  }
+  
+  private FutureLODAndVOrder getLODAndVOrder( int lod, int orderV )
+  {
+    while ( lod >= 0 )
+    {
+      pt[] result = m_packetFetcher.fetchGeometry(lod, orderV);
+      if ( result[1] != null )
+      {
+        break;
+      }
+      lod--;
+      orderV*=3;
+    }
+    return new FutureLODAndVOrder( lod, orderV );
   }
 
   private int findSmallestExpansionCorner( int lod, int corner )
@@ -123,8 +154,9 @@ class WorkingMesh extends Mesh
   int addVertex(pt p, int lod, int orderV)
   {
     int vertexIndex = addVertex(p);
-    m_LOD[vertexIndex] = lod;
-    m_orderV[vertexIndex] = orderV;
+    FutureLODAndVOrder future = getLODAndVOrder( lod, orderV );
+    m_LOD[vertexIndex] = future.lod();
+    m_orderV[vertexIndex] = future.orderV();
     return vertexIndex;
   }
 
