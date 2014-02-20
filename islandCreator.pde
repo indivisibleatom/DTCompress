@@ -243,6 +243,11 @@ class IslandCreator
       if ( channelOffset != 0 )
       {
         changeCorners( m_mesh.c(m_mesh.t(channelCorner)), channelOffset );
+        if (m_mesh.t(channelCorner) == 18)
+        {
+          print("Here " + channelOffset + "\n");
+        }
+        m_mesh.m_tOffsets[m_mesh.t(channelCorner)] = channelOffset;
       }
       currentCorner = m_mesh.n(currentCorner);
     } while ( currentCorner != m_mesh.c(triangleIsland) );

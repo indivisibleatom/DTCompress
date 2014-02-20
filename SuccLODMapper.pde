@@ -51,7 +51,7 @@ class SuccLODMapperManager
   {
     for (int i = NUMLODS-1; i >= 0; i--)
     {
-      //m_sucLODMapper[i].pushCornerNumberings( ( (i == NUMLODS-1)?null : m_sucLODMapper[i+1]) );
+      m_sucLODMapper[i].pushCornerNumberings( ( (i == NUMLODS-1)?null : m_sucLODMapper[i+1]) );
       m_sucLODMapper[i].createGExpansionPacket( ( (i == NUMLODS-1)?null : m_sucLODMapper[i+1]) );
       m_sucLODMapper[i].createTriangleNumberings( ( (i == NUMLODS-1)?null : m_sucLODMapper[i+1]), m_sucLODMapper[NUMLODS-1].getBaseTriangles() );
       print("LOD " + i + "\n");
@@ -67,6 +67,7 @@ class SuccLODMapper
   private Mesh m_refined;
   private int [][]m_baseToRefinedVMap;
   private int []m_tBaseToRefinedTMap;
+  private int []m_tBaseToRefinedTOffsetsNextLevel; //Stores offsets that need to be propagated for next level
   private int [][]m_vBaseToRefinedTMap;
 
   private int []m_vertexNumberings;  //Mapping from the vertices ordered correctly (3i,3i+1,..) according to the base mesh to the actual vertex numbers in the main mesh > used to transition from one LOD to another.
@@ -169,20 +170,7 @@ class SuccLODMapper
       }
     }
   }
-  
-  //Just to ease debugging. Remove in final version
-  void pushCornerNumberings( SuccLODMapper parent )
-  {
-    if ( parent != null )
-    {
-      for (int i = 0; i < parent.m_refined.nc; i++)
-      {
-        m_base.V[i] = parent.m_refined.V[i];
-        m_base.O[i] = parent.m_refined.O[i];
-      }
-    }
-  }
-  
+    
   void printVertexMapping(int corner, int meshNumber)
   {
     //Treating corner for the base mesh
@@ -386,6 +374,31 @@ class SuccLODMapper
     }
   }  
 
+  public void pushCornerNumberings( SuccLODMapper parent )
+  {
+    if ( parent != null )
+    {
+      for (int i = 0; i < parent.m_refined.nc; i++)
+      {
+        m_base.V[i] = parent.m_refined.V[i];
+        m_base.O[i] = parent.m_refined.O[i];
+      }
+      for (int i = 0; i < m_base.nt; i++)
+      {
+        int refinedTriangle = m_tBaseToRefinedTMap[i];
+        int offset = parent.m_refined.m_tOffsets[i];
+        int lowestCorner = m_refined.c(refinedTriangle);
+        m_base.m_tOffsets[i] = offset;
+        m_refined.m_tOffsets[refinedTriangle] = offset;
+        if (i == 18)
+        {
+           print("Here " + parent.m_refined.m_tOffsets[i] + " " + lowestCorner + "\n");
+        }
+        fixupTriangleCorners( lowestCorner + offset );
+      }
+    }
+  }
+  
   //Offsets the corners in a mesh
   private void changeCorners(int corner, int offset)
   {
@@ -404,21 +417,14 @@ class SuccLODMapper
     }
   }
   
-  private void fixupIslandTriangleCorners( int cornerIsland )
+  private void fixupTriangleCorners( int offsetCorner )
   {
-    int desiredLowestCorner = cornerIsland;
-    int currestLowestCorner = m_refined.c(m_refined.t(desiredLowestCorner));
-    int offset = desiredLowestCorner % 3;
+    int desiredLowestCorner = offsetCorner;
+    int currestLowestCorner = m_refined.c(m_refined.t(offsetCorner));
+    int offset = offsetCorner % 3;
     if ( offset != 0 )
     {
       changeCorners( currestLowestCorner, offset );
-    }
-    else
-    {
-      if ( DEBUG && DEBUG_MODE >= LOW )
-      {
-        print("SuccLODMapper fixupChannelCorners - this method should not have been called!\n");
-      }
     }
   }  
   
@@ -554,8 +560,9 @@ class SuccLODMapper
         if ( (cornerIsland%3) != 0)
         {
           print("Fixing up corner in refined " + cornerIsland + "\n");
-          fixupIslandTriangleCorners( cornerIsland );
+          fixupTriangleCorners( cornerIsland );
           int offset = (cornerIsland%3);
+          m_refined.m_tOffsets[m_refined.t(cornerIsland)] = offset;
           int []newVMap = new int[3];
           int []newTMap = new int[3];
           for (int j = 0; j < 3; j++)

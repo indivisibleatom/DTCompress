@@ -99,6 +99,7 @@ class Mesh {
 
   //wrapper class providing utilities to meshes
   MeshUtils m_utils = new MeshUtils(this);
+  int[] m_tOffsets = new int[maxnt]; //Storing the T offsets for propagating down LOD's. TODO msati3: better approach?
 
   //  ==================================== OFFSET ====================================
   void offset() {
