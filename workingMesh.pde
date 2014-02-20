@@ -81,9 +81,9 @@ class WorkingMesh extends Mesh
       int cornerOffset = currentCorner%3;
       int triangle = t(currentCorner);
       int orderT = m_orderT[triangle];
-      if (triangle < minTriangle && m_packetFetcher.fetchConnectivity(lod, 3*orderT + cornerOffset) == true)
+      if (orderT < minTriangle && m_packetFetcher.fetchConnectivity(lod, 3*orderT + cornerOffset) == true)
       {
-        minTriangle = triangle;
+        minTriangle = orderT;
         smallestCorner = currentCorner;
       }
       currentCorner = s(currentCorner);

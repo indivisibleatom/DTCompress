@@ -258,10 +258,10 @@ class IslandCreator
     m_mesh.resetMarkers();
 
     int numTries = 0;
-    //while (numTries < 50)
-    while (numTries < 1)
+    while (numTries < 50)
+    //while (numTries < 1)
     {
-      if ( LOD == 0 )
+      /*if ( LOD == 0 )
       {
         m_seed = 461;
         LOD++;
@@ -269,8 +269,8 @@ class IslandCreator
       else
       {
         m_seed = 30;
-      }
-      /*for (int i = 0; i < 100; i++)
+      }*/
+      for (int i = 0; i < 100; i++)
       {
         m_seed = retrySeed();
         if ( validTriangle(m_seed) )
@@ -281,7 +281,7 @@ class IslandCreator
         {
           m_seed = -1;
         }
-      }*/
+      }
       if ( m_seed != -1 )
       {
         m_cornerFifo.add(m_seed);
@@ -290,7 +290,7 @@ class IslandCreator
       numTries++;      
     }
     
-    print(m_seed + "\n");
+    print("Seed " + m_seed + "\n");
     
     internalCreateIslandsPass2();
 
