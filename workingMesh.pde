@@ -39,6 +39,10 @@ class WorkingMesh extends Mesh
     m_baseTriangles = nt;
     m_userInputHandler = new WorkingMeshUserInputHandler(this);
     m_packetFetcher = new PacketFetcher(lodMapperManager);
+    m_triangleColorMap = new int[10];
+    m_triangleColorMap[0] = green;
+    m_triangleColorMap[1] = yellow;
+    m_triangleColorMap[2] = red;
 
     for (int i = 0; i < m.nt; i++)
     {
@@ -51,6 +55,14 @@ class WorkingMesh extends Mesh
       FutureLODAndVOrder future = getLODAndVOrder( NUMLODS - 1, i );
       m_LOD[i] = future.lod();
       m_orderV[i] = future.orderV();
+    }
+  }
+  
+  void markTriangleAges()
+  {
+     for (int i = 0; i < nc; i++)
+    {
+      tm[t(i)] = m_LOD[v(i)] + 1;
     }
   }
   
@@ -165,7 +177,7 @@ class WorkingMesh extends Mesh
     addTriangle(v1, v2, v3);
     print("Adding triangle with order " + orderT + "\n");
     m_orderT[nt-1] = orderT;
-    m_ageT[nt - 1] = ageT;
+    m_ageT[nt - 1] = ageT;     
   }
 
   void printVerticesSelected()
@@ -354,6 +366,23 @@ class WorkingMesh extends Mesh
     O[offsetCorner+10] = offsetCorner+1;
     O[offsetCorner+4] = offsetCorner+2;
     markExpandableVerts();
+    
+    //Recolor expanded vertex
+    //colorCorrect( offsetCorner );
+  }
+  
+  void colorCorrect( int corner )
+  {
+    int currentCorner = corner;
+    do
+    {
+      int swingCorner = currentCorner;
+      do
+      {
+        swingCorner = s(swingCorner);
+      } while (swingCorner != currentCorner);
+      currentCorner = n(currentCorner);
+    } while (currentCorner != corner);
   }
 }
 

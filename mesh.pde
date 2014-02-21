@@ -100,6 +100,7 @@ class Mesh {
   //wrapper class providing utilities to meshes
   MeshUtils m_utils = new MeshUtils(this);
   int[] m_tOffsets = new int[maxnt]; //Storing the T offsets for propagating down LOD's. TODO msati3: better approach?
+  int[] m_triangleColorMap = null; //Control of triangle coloring possible from here
 
   //  ==================================== OFFSET ====================================
   void offset() {
@@ -847,30 +848,36 @@ class Mesh {
         shade(t); 
         continue;
       }
-      //if(tm[t]==1) continue; 
-      //if(tm[t]==1&&!showMiddle || tm[t]==0&&!showLeft || tm[t]==2&&!showRight) continue; 
-      if (tm[t]==0) fill(cyan, opacity); 
-      if (tm[t]==1) fill(brown, opacity); 
-      if (tm[t]==2) fill(orange, opacity); 
-      if (tm[t]==3) fill(cyan, opacity); 
-      if (tm[t]==4) fill(magenta, opacity); 
-      if (tm[t]==5) fill(green, opacity); 
-      if (tm[t]==6) fill(blue, opacity); 
-      if (tm[t]==7) fill(#FAAFBA, opacity); 
-      if (tm[t]==8) fill(blue, opacity); 
-      if (tm[t]==9) fill(yellow, opacity); 
-      
-      if (tm[t]==10) fill(cyan, opacity); 
-      if (tm[t]==11) fill(brown, opacity); 
-      if (tm[t]==12) fill(orange, opacity); 
-      if (tm[t]==13) fill(cyan, opacity); 
-      if (tm[t]==14) fill(magenta, opacity); 
-      if (tm[t]==15) fill(green, opacity); 
-      if (tm[t]==16) fill(blue, opacity); 
-      if (tm[t]==17) fill(#FAAFBA, opacity); 
-      if (tm[t]==18) fill(blue, opacity); 
-      if (tm[t]==19) fill(yellow, opacity); 
-      
+      if (m_triangleColorMap != null)
+      {
+        fill(m_triangleColorMap[tm[t]]);
+      }
+      else
+      {
+        //if(tm[t]==1) continue; 
+        //if(tm[t]==1&&!showMiddle || tm[t]==0&&!showLeft || tm[t]==2&&!showRight) continue; 
+        if (tm[t]==0) fill(cyan, opacity); 
+        if (tm[t]==1) fill(brown, opacity); 
+        if (tm[t]==2) fill(orange, opacity); 
+        if (tm[t]==3) fill(cyan, opacity); 
+        if (tm[t]==4) fill(magenta, opacity); 
+        if (tm[t]==5) fill(green, opacity); 
+        if (tm[t]==6) fill(blue, opacity); 
+        if (tm[t]==7) fill(#FAAFBA, opacity); 
+        if (tm[t]==8) fill(blue, opacity); 
+        if (tm[t]==9) fill(yellow, opacity); 
+        
+        if (tm[t]==10) fill(cyan, opacity); 
+        if (tm[t]==11) fill(brown, opacity); 
+        if (tm[t]==12) fill(orange, opacity); 
+        if (tm[t]==13) fill(cyan, opacity); 
+        if (tm[t]==14) fill(magenta, opacity); 
+        if (tm[t]==15) fill(green, opacity); 
+        if (tm[t]==16) fill(blue, opacity); 
+        if (tm[t]==17) fill(#FAAFBA, opacity); 
+        if (tm[t]==18) fill(blue, opacity); 
+        if (tm[t]==19) fill(yellow, opacity); 
+      }    
       if (vis[tm[t]]) {
         if (m_drawingState.m_shrunk != 0) showShrunkT(t, m_drawingState.m_shrunk); 
         else shade(t);

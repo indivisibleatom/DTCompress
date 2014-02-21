@@ -91,6 +91,7 @@ class SimplificationController
        m_lodMapperManager.propagateNumberings();
        m_workingMesh = new WorkingMesh( m_baseMesh, m_lodMapperManager );
        m_workingMesh.resetMarkers();
+       m_workingMesh.markTriangleAges();
        m_workingMesh.markExpandableVerts();
        m_workingMesh.computeBox();
        setWorkingMesh();
