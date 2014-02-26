@@ -10,7 +10,9 @@ class MeshSimplifierEdgeCollapse
   //Caching the two locations of L and R triangles for edge collapses, if they are moved from the end of the list.
   int m_locationLT;
   int m_locationRT;
-  int m_collapseRevert; //count the number of island triangles moved up in one collapse, so that we can reconsider them
+  int m_currentTriangleIndex;
+  int[] m_tMappingMeshTToSimplifiedT;
+  int[] m_vMappingMeshVToSimplifiedV;
   
   MeshSimplifierEdgeCollapse( Mesh m, SuccLODMapperManager sLODMapperManager )
   {
@@ -21,9 +23,13 @@ class MeshSimplifierEdgeCollapse
     m_triangleMappingBaseToMain = new int[m_mesh.nt];
     m_vertexToTriagleMappingBaseToMain = new int[m_mesh.nv][4];
 
+    m_tMappingMeshTToSimplifiedT = new int[m_mesh.nt];
+    m_vMappingMeshVToSimplifiedV = new int[m_mesh.nv];
+
     m_succLODMapperManager.addLODLevel();
     m_succLODMapperManager.getActiveLODMapper().setBaseMesh(m_simplifiedMesh);
     m_succLODMapperManager.getActiveLODMapper().setRefinedMesh(m_mesh);
+    m_currentTriangleIndex = 0;
   }
   
   private pt centroid(Mesh m, int triangleIndex)
@@ -142,6 +148,8 @@ class MeshSimplifierEdgeCollapse
       triangleMoved2[0] = m.nt-2;
       triangleMoved1[1] = t1;
       triangleMoved2[1] = t2;
+      if ( [t1] == 
+      m_triangleMappingBaseToMain[
     }
     else if ( move1 == 2 )
     {
@@ -178,26 +186,24 @@ class MeshSimplifierEdgeCollapse
     {
         m_locationLT = triangleMoved1[1];
     }
-    else if ( triangleMoved2[0] == m_locationLT )
+    else if ( triangleMoved2[0] != -1 && triangleMoved2[0] == m_locationLT )
     {
-        m_locationLT = triangleMoved2[0];
+        m_locationLT = triangleMoved2[1];
     }
     if ( triangleMoved1[0] == m_locationRT )
     {
         m_locationRT = triangleMoved1[1];
     }
-    else if ( triangleMoved2[0] == m_locationRT )
+    else if ( triangleMoved2[1] != -1 && triangleMoved2[0] == m_locationRT )
     {
         m_locationRT = triangleMoved2[1];
     }
     
-    if ( m.tm[triangleMoved1[1]] == ISLAND )
+    if ( m.tm[triangleMoved1[1]] == ISLAND && triangleMoved1[1] < m_currentTriangleIndex )
     {
-      m_collapseRevert++;
     }
-    if ( m.tm[triangleMoved2[1]] == ISLAND )
+    if ( m.tm[triangleMoved2[1]] == ISLAND && triangleMoved2[1] < m_currentTriangleIndex )
     {
-      m_collapseRevert++;
     }
 
     m.nc -= 6;
@@ -238,61 +244,59 @@ class MeshSimplifierEdgeCollapse
   Mesh simplify()
   {
     copyMainToSimplifiedMesh();
-    
-    int[] islandTriangleNumbersInMain = new int[m_mesh.nt];
-    int numIslandTriangles = 0;
-    int numBaseTriangles = 0;
-    
+   
+    int numBaseTriangles = 0;   
     for (int i = 0; i < m_mesh.nt; i++)
     {
-      if (m_mesh.tm[i] == ISLAND)
-      {
-        islandTriangleNumbersInMain[numIslandTriangles++] = i;
-      }
+      m_tMappingMeshTToSimplifiedT[i] = i;
       if (m_mesh.tm[i] != ISLAND && m_mesh.tm[i] != CHANNEL)
       {
          m_triangleMappingBaseToMain[numBaseTriangles++] = i;
       }
     }
 
-    numIslandTriangles = 0;
-    for (int i = 0; i < m_simplifiedMesh.nt; i++)
+    for (int i = 0; i < m_mesh.nv; i++)
     {
-      if (m_simplifiedMesh.tm[i] == ISLAND)
-      {
-        int c = m_simplifiedMesh.c(i);
-        int o = m_simplifiedMesh.o(c);
-        int l = m_simplifiedMesh.l(c);
-        int r = m_simplifiedMesh.r(c);
-        
-        if (DEBUG && DEBUG_MODE >= LOW)
+      m_vMappingMeshVToSimplifiedV[i] = i;
+    }
+
+    for (int i = 0; i < m_mesh.nt; i++)
+    {
+        int simplifiedT = m_tMappingMeshTToSimplifiedT[i];
+        if (m_simplifiedMesh.tm[simplifiedT] == ISLAND)
         {
-          print(c + " " + o + " " + l + " " + r + "\n");
+          int c = m_simplifiedMesh.c(simplifiedT);
+          int o = m_simplifiedMesh.o(simplifiedT);
+          int l = m_simplifiedMesh.l(simplifiedT);
+          int r = m_simplifiedMesh.r(simplifiedT);
+          
+          if (DEBUG && DEBUG_MODE >= LOW)
+          {
+            print(c + " " + o + " " + l + " " + r + "\n");
+          }
+  
+          pt newPt = centroid(m_simplifiedMesh, i);
+          m_currentTriangleIndex = i;
+          int commonVertexIndex = edgeCollapse( c, o, newPt );
+          m_locationRT = r;
+          m_locationLT = l;
+          commonVertexIndex = edgeCollapse( m_locationLT, m_locationRT, newPt );
+         
+          m_vertexMappingBaseToMain[commonVertexIndex][0] = m_mesh.v(m_mesh.c(m_tMappingMeshTToSimplifiedT[i]));
+          m_vertexMappingBaseToMain[commonVertexIndex][1] = m_mesh.v(m_mesh.n(m_mesh.c(m_tMappingMeshTToSimplifiedT[i])));
+          m_vertexMappingBaseToMain[commonVertexIndex][2] = m_mesh.v(m_mesh.p(m_mesh.c(m_tMappingMeshTToSimplifiedT[i])));
+          
+          m_vertexToTriagleMappingBaseToMain[commonVertexIndex][0] = m_tMappingMeshTToSimplifiedT[i];
+          m_vertexToTriagleMappingBaseToMain[commonVertexIndex][1] = m_mesh.t(m_mesh.u(m_mesh.c(m_tMappingMeshTToSimplifiedT[i])));
+          m_vertexToTriagleMappingBaseToMain[commonVertexIndex][2] = m_mesh.t(m_mesh.u(m_mesh.n(m_tMappingMeshTToSimplifiedT[i]))));
+          m_vertexToTriagleMappingBaseToMain[commonVertexIndex][3] = m_mesh.t(m_mesh.u(m_mesh.p(m_tMappingMeshTToSimplifiedT[i]))));          
         }
-
-        pt newPt = centroid(m_simplifiedMesh, i);
-        m_collapseRevert = 0;
-        int commonVertexIndex = edgeCollapse( c, o, newPt );
-        m_locationRT = r;
-        m_locationLT = l;
-        commonVertexIndex = edgeCollapse( m_locationLT, m_locationRT, newPt );
-       
-        m_vertexMappingBaseToMain[commonVertexIndex][0] = m_mesh.v(m_mesh.c(islandTriangleNumbersInMain[numIslandTriangles]));
-        m_vertexMappingBaseToMain[commonVertexIndex][1] = m_mesh.v(m_mesh.n(m_mesh.c(islandTriangleNumbersInMain[numIslandTriangles])));
-        m_vertexMappingBaseToMain[commonVertexIndex][2] = m_mesh.v(m_mesh.p(m_mesh.c(islandTriangleNumbersInMain[numIslandTriangles])));
-        
-        m_vertexToTriagleMappingBaseToMain[commonVertexIndex][0] = islandTriangleNumbersInMain[numIslandTriangles];
-        m_vertexToTriagleMappingBaseToMain[commonVertexIndex][1] = m_mesh.t(m_mesh.u(m_mesh.c(islandTriangleNumbersInMain[numIslandTriangles])));
-        m_vertexToTriagleMappingBaseToMain[commonVertexIndex][2] = m_mesh.t(m_mesh.u(m_mesh.n(m_mesh.c(islandTriangleNumbersInMain[numIslandTriangles]))));
-        m_vertexToTriagleMappingBaseToMain[commonVertexIndex][3] = m_mesh.t(m_mesh.u(m_mesh.p(m_mesh.c(islandTriangleNumbersInMain[numIslandTriangles]))));
-
-        
-        numIslandTriangles++;
-
-        //At most 3 triangles before may be removed due to collapse. Revert i index to the required number for this case
-        i -= m_collapseRevert;
-        m_collapseRevert = 0;
       }
+    }
+    
+    for (int i = 0; i < m_mesh.nv; i++)
+    {
+      if ( m_vMappingMeshVToSimplifiedV[i]
     }
     m_succLODMapperManager.getActiveLODMapper().setBaseToRefinedVMap(m_vertexMappingBaseToMain);
     m_succLODMapperManager.getActiveLODMapper().setBaseToRefinedTMap(m_triangleMappingBaseToMain);
