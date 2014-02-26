@@ -6,6 +6,11 @@ class MeshSimplifierEdgeCollapse
   int[][] m_vertexMappingBaseToMain;
   int[] m_triangleMappingBaseToMain;
   int[][] m_vertexToTriagleMappingBaseToMain;
+
+  //Caching the two locations of L and R triangles for edge collapses, if they are moved from the end of the list.
+  int m_locationLT;
+  int m_locationRT;
+  int m_collapseRevert; //count the number of island triangles moved up in one collapse, so that we can reconsider them
   
   MeshSimplifierEdgeCollapse( Mesh m, SuccLODMapperManager sLODMapperManager )
   {
@@ -69,37 +74,12 @@ class MeshSimplifierEdgeCollapse
     m_simplifiedMesh.nc = m_mesh.nc;
   }
   
-  //Ch
   private void populateOpposites( int c )
   {
     int l = m_simplifiedMesh.l(c);
     int r = m_simplifiedMesh.r(c);
     m_simplifiedMesh.O[l] = r;
     m_simplifiedMesh.O[r] = l;
-  }
-  
-  private void shifGUp( pt[] G, int lower, int higher)
-  {
-    int offset = 1;
-    for (int i = lower+1; i < m_mesh.nv; i++)
-    {
-      if ( i == higher )
-      {
-        offset = 2;
-      }
-      else
-      {
-        G[i-offset] = G[i];
-        for (int j = 0; j < 3; j++)
-        {
-          m_vertexMappingBaseToMain[i-offset][j] = m_vertexMappingBaseToMain[i][j];        
-        }
-        for (int j = 0; j < 4; j++)
-        {
-          m_vertexToTriagleMappingBaseToMain[i-offset][j] = m_vertexToTriagleMappingBaseToMain[i][j];        
-        }
-      }
-    }
   }
 
   private void shiftGUp( pt[] G, int startIndex )
@@ -118,87 +98,110 @@ class MeshSimplifierEdgeCollapse
     }
   }
   
-  private void fixupV( int lowV, int highV )
+  private void fixupV( int lowV, int highC )
   {
     Mesh m = m_simplifiedMesh;
-    for (int i = 0; i < m.nc; i++)
+    int currentCorner = highC;
+    do
     {
-      if ( m.V[i] == highV )
-      {
-        m.V[i] = lowV;
-      }
-      else if ( m.V[i] > highV )
-      {
-        m.V[i]--;
-      }
-    }
-  }
-  
-  private void fixupV( int vertexIndex, int lowV, int highV )
-  {
-    Mesh m = m_simplifiedMesh;
-    for (int i = 0; i < m.nc; i++)
-    {
-      if ( m.V[i] == highV || m.V[i] == lowV )
-      {
-        m.V[i] = vertexIndex;
-      }
-      else if ( m.V[i] > lowV && m.V[i] < highV )
-      {
-        m.V[i]--;
-      }
-      else if ( m.V[i] > highV )
-      {
-        m.V[i] -= 2;
-      }
-    }
+      m.V[currentCorner] = lowV;
+      currentCorner = m.s(currentCorner);
+    } while (currentCorner != highC);
   }
 
-  private int cornerShift( int corner, int c1, int c2 )
-  {
-    if ( corner < c1 && corner < c2 )
-      return corner;
-    if ( corner > c1 && corner > c2 )
-      return corner - 6;
-    return corner - 3;
-  }
-  
-  private void fixupO( int c1, int c2 )
-  {
-    Mesh m = m_simplifiedMesh;
-    for (int i = 0; i < m.nc; i++)
-    {
-      m.O[i] = cornerShift( m.O[i], c1, c2 );
-    }
-  }
-  
   private void moveTriangle( int fromT, int toT )
   {
+    Mesh m = m_simplifiedMesh;
     for (int i = 0; i < 3; i++)
     {
-      V[3*toT + i] = V[3*fromT + i];
-      O[3*toT + i] = O[3*fromT + i];
-      O[O[3*toT + i]] = 3*toT + i;
+      m.V[3*toT + i] = m.V[3*fromT + i];
+      m.O[3*toT + i] = m.O[3*fromT + i];
+      m.O[m.O[3*toT + i]] = 3*toT + i;
+      m.tm[3*toT + i] = m.tm[3*fromT + i];
     }
   }
   
   private void removeTriangles( int t1, int t2 )
   {
     //Copy the last triangles here
-    boolean move1 = ( t1 == m.nt - 1 || t1 == m.nt - 2 ) ? false : true;
-    boolean move2 = ( t2 == m.nt - 1 || t2 == m.nt - 2 ) ? false : true;
-    int lowestT = ((move1 && move2) ? m.nt - 3) : ((move1 || move2) ? m.nt - 2 : m.nt - 1);
-    if ( move1 )
+    Mesh m = m_simplifiedMesh;
+    int move1 = t1 == m.nt - 1 ? 0 : t1 == m.nt - 2 ? 1 : 2;
+    int move2 = t2 == m.nt - 1 ? 0 : t2 == m.nt - 2 ? 1 : 2;
+    if ( move1+move2 == 1 ) //The two are the last and the second last
     {
-      moveTriangle( lowestT, t1 );
-      lowestT--;
-    } 
-    if ( move2 )
-    {
-      moveTriangle( lowestT, t2 );
+      return;
     }
+    
+    int[] triangleMoved1 = {-1, -1};
+    int[] triangleMoved2 = {-1, -1};
+    if ( move1 + move2 == 4 )
+    {
+      moveTriangle( m.nt-1, t1 );
+      moveTriangle( m.nt-2, t2 );
+      triangleMoved1[0] = m.nt-1;
+      triangleMoved2[0] = m.nt-2;
+      triangleMoved1[1] = t1;
+      triangleMoved2[1] = t2;
+    }
+    else if ( move1 == 2 )
+    {
+      if ( move2 != 0 )
+      {
+        moveTriangle( m.nt-1, t1 );
+        triangleMoved1[0] = m.nt - 1;
+        triangleMoved1[1] = t1;
+      }
+      else
+      {
+        moveTriangle( m.nt-2, t1 );
+        triangleMoved1[0] = m.nt - 2;
+        triangleMoved1[1] = t1;
+      }
+    }
+    else if ( move2 == 2 )
+    {
+      if ( move1 != 0 )
+      {
+        moveTriangle( m.nt-1, t2 );
+        triangleMoved1[0] = m.nt - 1;
+        triangleMoved1[1] = t2;
+      }
+      else
+      {
+        moveTriangle( m.nt-2, t2 );
+        triangleMoved1[0] = m.nt - 2;
+        triangleMoved1[1] = t2;
+      }
+    }
+   
+    if ( triangleMoved1[0] == m_locationLT )
+    {
+        m_locationLT = triangleMoved1[1];
+    }
+    else if ( triangleMoved2[0] == m_locationLT )
+    {
+        m_locationLT = triangleMoved2[0];
+    }
+    if ( triangleMoved1[0] == m_locationRT )
+    {
+        m_locationRT = triangleMoved1[1];
+    }
+    else if ( triangleMoved2[0] == m_locationRT )
+    {
+        m_locationRT = triangleMoved2[1];
+    }
+    
+    if ( m.tm[triangleMoved1[1]] == ISLAND )
+    {
+      m_collapseRevert++;
+    }
+    if ( m.tm[triangleMoved2[1]] == ISLAND )
+    {
+      m_collapseRevert++;
+    }
+
     m.nc -= 6;
-    m.nt -= 2;    
+    m.nt -= 2;
   }
   
   //Collapse to a new vertex. Add this new vertex to lower location of G table and modify O, V and G tables
@@ -211,64 +214,25 @@ class MeshSimplifierEdgeCollapse
     Mesh m = m_simplifiedMesh;
     int v1 = m.v(m.n(c1));
     int v2 = m.v(m.p(c1));
-    int lower = v1 < v2 ? v1 : v2;
-    int higher = v1 > v2 ? v1 : v2;
+    int lowerV = v1 < v2 ? v1 : v2;
+    int higherV = v1 > v2 ? v1 : v2;
+    int lowerC = v1 < v2 ? m.n(c1) : m.p(c2);
+    int higherC = v1 > v2 ? m.n(c1) : m.p(c2);
     
+    fixupV(lowerV, higherC);
+
     //Populate opposites
     populateOpposites(c1);
     populateOpposites(c2);
     
     //Add vertex, modify G
-    m.G[lower] = vertex;
-    shiftGUp(m.G, higher);
-    m.nv--;
+    m.G[lowerV] = vertex;
     
     //Remove triangles modify V and O
     int t1 = m.t(c1); int t2 = m.t(c2);
     removeTriangles( t1, t2 );
-    fixupV(lower, higher);
-    fixupO(3*t1, 3*t2);
     
-    return lower;
-  }
-  
-  //Collapse to an already existing vertex
-  private int edgeCollapse( int c1, int c2, int vertexIndex )
-  {
-    Mesh m = m_simplifiedMesh;
-    int v1 = m.v(m.n(c1));
-    int v2 = m.v(m.p(c1));
-    int lower = v1 < v2 ? v1 : v2;
-    int higher = v1 > v2 ? v1 : v2;
-    int retVal = 0;
-    
-    //Populate opposites
-    populateOpposites(c1);
-    populateOpposites(c2);
-    
-    //Modify G
-    if ( lower < vertexIndex )
-    {
-      m.G[lower] = m.G[vertexIndex];
-      lower = vertexIndex < higher ? vertexIndex : higher;
-      higher = vertexIndex > higher ? vertexIndex : higher; 
-      shifGUp(m.G, lower, higher);
-      retVal = lower;
-    }
-    else
-    {
-      shifGUp(m.G, lower, higher);
-      retVal = vertexIndex;
-    }
-    m.nv -= 2;
-    
-    //Remove triangles modify  V and O
-    int t1 = m.t(c1); int t2 = m.t(c2);
-    removeTriangles( t1, t2 );
-    fixupV(retVal, lower, higher);
-    fixupO(3*t1, 3*t2);
-    
-    return retVal;
+    return lowerV;
   }
   
   Mesh simplify()
@@ -301,19 +265,18 @@ class MeshSimplifierEdgeCollapse
         int l = m_simplifiedMesh.l(c);
         int r = m_simplifiedMesh.r(c);
         
-        if (DEBUG && DEBUG_MODE >= VERBOSE)
+        if (DEBUG && DEBUG_MODE >= LOW)
         {
           print(c + " " + o + " " + l + " " + r + "\n");
         }
 
         pt newPt = centroid(m_simplifiedMesh, i);
+        m_collapseRevert = 0;
         int commonVertexIndex = edgeCollapse( c, o, newPt );
-
-        
-        l = cornerShift( l, c, o );
-        r = cornerShift( r, c, o );
-        commonVertexIndex = edgeCollapse( l, r, newPt );
-        
+        m_locationRT = r;
+        m_locationLT = l;
+        commonVertexIndex = edgeCollapse( m_locationLT, m_locationRT, newPt );
+       
         m_vertexMappingBaseToMain[commonVertexIndex][0] = m_mesh.v(m_mesh.c(islandTriangleNumbersInMain[numIslandTriangles]));
         m_vertexMappingBaseToMain[commonVertexIndex][1] = m_mesh.v(m_mesh.n(m_mesh.c(islandTriangleNumbersInMain[numIslandTriangles])));
         m_vertexMappingBaseToMain[commonVertexIndex][2] = m_mesh.v(m_mesh.p(m_mesh.c(islandTriangleNumbersInMain[numIslandTriangles])));
@@ -327,11 +290,8 @@ class MeshSimplifierEdgeCollapse
         numIslandTriangles++;
 
         //At most 3 triangles before may be removed due to collapse. Revert i index to the required number for this case
-        i -= 4;
-        if ( i < -1 )
-        {
-          i = -1;
-        }
+        i -= m_collapseRevert;
+        m_collapseRevert = 0;
       }
     }
     m_succLODMapperManager.getActiveLODMapper().setBaseToRefinedVMap(m_vertexMappingBaseToMain);
