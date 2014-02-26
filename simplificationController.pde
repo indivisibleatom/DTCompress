@@ -23,10 +23,11 @@ class SimplificationController
   m_lodMapperManager = new SuccLODMapperManager();
   m_baseMesh = null;
   m_islandMesh.declareVectors();  
-  m_islandMesh.loadMeshVTS("data/horse.vts");
+  m_islandMesh.loadMeshVTS("data/new.vts");
   m_islandMesh.updateON(); // computes O table and normals
   m_islandMesh.resetMarkers(); // resets vertex and tirangle markers
   m_islandMesh.computeBox();
+  print("Box " + m_islandMesh.Cbox.x + " " + m_islandMesh.Cbox.y + " " + m_islandMesh.Cbox.z + "\n");
   m_viewportManager.registerMeshToViewport( m_islandMesh, 0 );
   m_displayMeshes.add(m_islandMesh);
   m_minMesh = 0;
@@ -158,20 +159,23 @@ class SimplificationController
  private void onMeshAdded( Mesh mesh )
  {
    m_displayMeshes.add(mesh);
-   print("Adding mesh" + m_maxMesh + " " + m_minMesh + " " + m_displayMeshes.size() + "\n");
    if ( m_maxMesh + 1 - m_minMesh >= c_numMeshes )
    {
      for (int i = m_minMesh; i < m_maxMesh; i++)
      {
+       print("Move mesh at index " + (i+1) + " to viewport " + (i - m_minMesh) + "\n");
        m_viewportManager.unregisterMeshFromViewport( m_displayMeshes.get(i), i - m_minMesh );
-       print("Register to viewport " + (i - m_minMesh) + "\n");
        m_viewportManager.registerMeshToViewport( m_displayMeshes.get(i+1), i - m_minMesh );
      }
+     print("Adding mesh at index " + (m_maxMesh+1) + " at viewport index " + (m_maxMesh - m_minMesh) + "\n");
+     m_viewportManager.unregisterMeshFromViewport( m_displayMeshes.get(m_maxMesh), m_maxMesh - m_minMesh );
+     m_viewportManager.registerMeshToViewport( m_displayMeshes.get(m_maxMesh + 1), m_maxMesh - m_minMesh );
      m_minMesh++;
    }
    else
    {
      m_viewportManager.registerMeshToViewport( m_displayMeshes.get(m_maxMesh + 1), m_maxMesh + 1 );
+     print("Added mesh at viewport index " + (m_maxMesh+1) + " Min mesh index at start of viewport " + (m_maxMesh+1) + " Mesh list size " + m_displayMeshes.size() + "\n");
    }
    m_maxMesh++;
  }

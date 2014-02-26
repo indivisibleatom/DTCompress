@@ -4,7 +4,9 @@
 //*********************************************************************
 import processing.opengl.*;                // load OpenGL libraries and utilities
 import javax.media.opengl.*; 
+import javax.media.opengl.GL; 
 import javax.media.opengl.glu.*; 
+import com.sun.opengl.util.BufferUtil;
 import java.nio.*;
 import java.util.*;
 GL gl; 
@@ -26,7 +28,7 @@ pt sE = P(), sF = P(); vec sU=V(); //  view parameters (saved with 'j'*/
 
 // *******************************************************************************************************************    SETUP
 void setup() {
-  size(1200, 600, OPENGL); // size(500, 500, OPENGL);  
+  size(1600, 1000, OPENGL); // size(500, 500, OPENGL);  
   setColors(); sphereDetail(3); 
   PFont font = loadFont("GillSans-24.vlw"); textFont(font, 20);  // font for writing labels on 
   
@@ -34,20 +36,20 @@ void setup() {
   
   g_controller = new SimplificationController(); //The controlling object for the project
 }
-  
+
 // ******************************************************************************************************************* DRAW      
 void draw() {  
   smooth();
   background(white);
-  /*camera();
-  gl.glColor3i(255,0,0);
-  gl.glBegin(TRIANGLE);
+  camera();
+  //gl.glColor3i(255,0,0);
+  /*gl.glBegin(TRIANGLE);
     gl.glColor3i(255,0,0);
-    gl.glVertex3d(0,0,-10);
+    gl.glVertex3d(0,0,10);
       gl.glColor3i(255,0,0);
-    gl.glVertex3d(100,0,-10);
+    gl.glVertex3d(100,0,10);
       gl.glColor3i(255,0,0);
-    gl.glVertex3d(50,100,-10);
+    gl.glVertex3d(50,100,10);
   gl.glEnd();*/
   g_controller.viewportManager().draw();
  } // end draw

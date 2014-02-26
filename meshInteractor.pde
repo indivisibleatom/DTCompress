@@ -17,6 +17,10 @@ class MeshInteractor
     {
       m_selectedMesh = 0;
     }
+    else
+    {
+      print("Adding when not 0\n");
+    }
     return m_meshes.size();
   }
   

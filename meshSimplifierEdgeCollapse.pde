@@ -172,37 +172,30 @@ class MeshSimplifierEdgeCollapse
     }
   }
   
+  private void moveTriangle( int fromT, int toT )
+  {
+    for (int i = 0; i < 3; i++)
+    {
+      V[3*toT + i] = V[3*fromT + i];
+      O[3*toT + i] = O[3*fromT + i];
+      O[O[3*toT + i]] = 3*toT + i;
+    }
+  }
+  
   private void removeTriangles( int t1, int t2 )
   {
-    Mesh m = m_simplifiedMesh;
-    int lower = t1 < t2 ? t1 : t2;
-    int higher = t1 > t2 ? t1 : t2; 
-    int offsetCorner = 3;
-    int offsetTriangle = 1;
-    
-    for (int i = lower + offsetTriangle; i < m.nt; i++)
+    //Copy the last triangles here
+    boolean move1 = ( t1 == m.nt - 1 || t1 == m.nt - 2 ) ? false : true;
+    boolean move2 = ( t2 == m.nt - 1 || t2 == m.nt - 2 ) ? false : true;
+    int lowestT = ((move1 && move2) ? m.nt - 3) : ((move1 || move2) ? m.nt - 2 : m.nt - 1);
+    if ( move1 )
     {
-      if ( i == higher )
-      {
-        offsetTriangle = 2;
-      }
-      else
-      {
-        m.tm[i-offsetTriangle] = m.tm[i]; 
-      }
-    }
-    
-    for (int i = 3*lower + offsetCorner; i < m.nc; i++)
+      moveTriangle( lowestT, t1 );
+      lowestT--;
+    } 
+    if ( move2 )
     {
-      if ( i == 3*higher || i == 3*higher+1 || i == 3*higher+2 )
-      {
-        offsetCorner = 6;
-      }
-      else
-      {
-        m.V[i-offsetCorner] = m.V[i];
-        m.O[i-offsetCorner] = m.O[i];
-      }
+      moveTriangle( lowestT, t2 );
     }
     m.nc -= 6;
     m.nt -= 2;    

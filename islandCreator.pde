@@ -184,15 +184,17 @@ class IslandCreator
     }
   }
  
-  private void internalCreateIslandsPass1()
+  private int internalCreateIslandsPass1()
   {
     int[] newPossibles = new int[3];
     int numPossibles;
     Integer corner;
+    int numberExpandable = 0;
     while ((corner = m_cornerFifo.poll()) != null)
     {
       if (validTriangle(corner)) //Check for validity at time of processing, as in between time of addition to fifo and processing, this might be changed
       {
+        numberExpandable++;
         visitTriangle(corner);
         numPossibles = findNewPossibles(corner, newPossibles);
         addPossiblesToFifo(newPossibles, numPossibles);
@@ -202,6 +204,7 @@ class IslandCreator
     {
       printStats();
     }
+    return numberExpandable;
   }
   
   private void internalCreateIslandsPass2()
@@ -258,19 +261,11 @@ class IslandCreator
     m_mesh.resetMarkers();
 
     int numTries = 0;
-    //while (numTries < 50)
-    while (numTries < 1)
+    int maxIslandSeed = 0;
+    int maxCreated = 0;
+    while (numTries < 10)
     {
-      if ( LOD == 0 )
-      {
-        m_seed = 441;
-        LOD++;
-      }
-      else
-      {
-        m_seed = 10;
-      }
-      /*for (int i = 0; i < 100; i++)
+      for (int i = 0; i < 100; i++)
       {
         m_seed = retrySeed();
         if ( validTriangle(m_seed) )
@@ -281,11 +276,15 @@ class IslandCreator
         {
           m_seed = -1;
         }
-      }*/
+      }
       if ( m_seed != -1 )
       {
         m_cornerFifo.add(m_seed);
-        internalCreateIslandsPass1();
+        int numCreated = internalCreateIslandsPass1();
+        if ( numCreated > maxCreated )
+        {
+          numCreated = maxCreated;
+        }
       }
       numTries++;      
     }
