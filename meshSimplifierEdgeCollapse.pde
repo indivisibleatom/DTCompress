@@ -10,8 +10,6 @@ class MeshSimplifierEdgeCollapse
   //Mapping from main mesh to mesh being incrementally simplified
   int[] m_tMappingMeshTToSimplifiedT;
   int[] m_tMappingSimplifiedTToMeshT;
-  int[] m_vSimplifiedMeshVToMappingV;
-  int[] m_vMappingMeshVToSimplifiedV;
   
   MeshSimplifierEdgeCollapse( Mesh m, SuccLODMapperManager sLODMapperManager )
   {
@@ -22,8 +20,6 @@ class MeshSimplifierEdgeCollapse
     m_triangleMappingBaseToMain = new int[m_mesh.nt];
     m_vertexToTriagleMappingBaseToMain = new int[m_mesh.nv][4];
 
-    m_vSimplifiedMeshVToMappingV = new int[m_mesh.nv];
-    m_vMappingMeshVToSimplifiedV = new int[m_mesh.nv];
     m_tMappingMeshTToSimplifiedT = new int[m_mesh.nt];
     m_tMappingSimplifiedTToMeshT = new int[m_mesh.nt];
  
@@ -106,6 +102,8 @@ class MeshSimplifierEdgeCollapse
   {
     //Copy the last triangles here
     Mesh m = m_simplifiedMesh;
+    m.nc -= 6;
+    m.nt -= 2;
     int move1 = t1 == m.nt - 1 ? 0 : t1 == m.nt - 2 ? 1 : 2;
     int move2 = t2 == m.nt - 1 ? 0 : t2 == m.nt - 2 ? 1 : 2;
     if ( move1+move2 == 1 ) //The two are the last and the second last
@@ -154,14 +152,14 @@ class MeshSimplifierEdgeCollapse
         triangleMoved1[1] = t2;
       }
     }  
-
-    m.nc -= 6;
-    m.nt -= 2;
   }
 
   //Collapse to a new vertex. Add this new vertex to lower location of G table and modify O, V and G tables
+  int numTimes = 0;
+  
   private int edgeCollapse( int c1, int c2, pt vertex )
   {
+    numTimes++;
     if ( DEBUG && DEBUG_MODE >= VERBOSE)
     {
       print("Edge collapse " + c1 + "  " + c2 + "\n");
@@ -171,10 +169,18 @@ class MeshSimplifierEdgeCollapse
     int v2 = m.v(m.p(c1));
     int lowerV = v1 < v2 ? v1 : v2;
     int higherV = v1 > v2 ? v1 : v2;
-    int lowerC = v1 < v2 ? m.n(c1) : m.p(c2);
-    int higherC = v1 > v2 ? m.n(c1) : m.p(c2);
-
+    int lowerC = v1 < v2 ? m.n(c1) : m.p(c1);
+    int higherC = v1 > v2 ? m.n(c1) : m.p(c1);
+    
     m.G[higherV] = null;
+
+    //Set all v's to point to lowerV
+    int currentCorner = higherC;
+    do
+    {
+      m.V[currentCorner] = lowerV;
+      currentCorner = m.s(currentCorner);
+    }while (currentCorner != higherC);
 
     //Populate opposites
     populateOpposites(c1);
@@ -202,7 +208,7 @@ class MeshSimplifierEdgeCollapse
     }
 
     int islandNumber = 0;
-    for (int i = 18; i < m_mesh.nt; i++)
+    for (int i = 0; i < m_mesh.nt; i++)
     {
         int simplifiedT = m_tMappingMeshTToSimplifiedT[i];
         if (m_mesh.tm[i] == ISLAND)
@@ -215,15 +221,16 @@ class MeshSimplifierEdgeCollapse
           pt newPt = centroid(m_mesh, i);
           int commonVertexIndex = edgeCollapse( c, o, newPt );
           
-          /*int l = m_simplifiedMesh.c(m_tMappingMeshTToSimplifiedT[m_mesh.t(lMain)]);
-          int r = m_simplifiedMesh.c(m_tMappingMeshTToSimplifiedT[m_mesh.t(rMain)]);
-          commonVertexIndex = edgeCollapse( l, r, newPt );*/
+          int l = m_simplifiedMesh.c(m_tMappingMeshTToSimplifiedT[m_mesh.t(lMain)]) + lMain%3;
+          int r = m_simplifiedMesh.c(m_tMappingMeshTToSimplifiedT[m_mesh.t(rMain)]) + rMain%3;
 
-          /*if (DEBUG && DEBUG_MODE >= LOW)
+          if (DEBUG && DEBUG_MODE >= VERBOSE)
           {
             print(c + " " + o + " " + l + " " + r + "\n");
-          }*/
+          }
 
+          commonVertexIndex = edgeCollapse( l, r, newPt );
+          
           m_vertexMappingBaseToMain[commonVertexIndex][0] = m_mesh.v(m_mesh.c(i));
           m_vertexMappingBaseToMain[commonVertexIndex][1] = m_mesh.v(m_mesh.n(m_mesh.c(i)));
           m_vertexMappingBaseToMain[commonVertexIndex][2] = m_mesh.v(m_mesh.p(m_mesh.c(i)));
@@ -232,8 +239,6 @@ class MeshSimplifierEdgeCollapse
           m_vertexToTriagleMappingBaseToMain[commonVertexIndex][1] = m_mesh.t(m_mesh.u(m_mesh.c(i)));
           m_vertexToTriagleMappingBaseToMain[commonVertexIndex][2] = m_mesh.t(m_mesh.u(m_mesh.n(i)));
           m_vertexToTriagleMappingBaseToMain[commonVertexIndex][3] = m_mesh.t(m_mesh.u(m_mesh.p(i)));
-
-          break;
        }
     }
 
@@ -242,26 +247,8 @@ class MeshSimplifierEdgeCollapse
     {
       if ( m_simplifiedMesh.G[i] != null )
       {
-        m_vMappingMeshVToSimplifiedV[i] = countV;
-        m_vSimplifiedMeshVToMapping[countV] = i;
         m_vertexMappingBaseToMain[countV] = m_vertexMappingBaseToMain[i];
         m_vertexToTriagleMappingBaseToMain[countV++] = m_vertexToTriagleMappingBaseToMain[i];
-      }
-      else
-      {
-        m_vMappingMeshVToSimplifiedV[i] = -1;
-      }
-    }
-
-    for (int i = 0; i < m_simplifiedMesh.nc; i++)
-    {
-      if ( m_vMappingMeshVToSimplifiedV[m_simplifiedMesh.v(i)] == -1 )
-      {
-        print("Error\n");
-      }
-      else
-      {
-        m_simplifiedMesh.V[i] = m_vMappingMeshVToSimplifiedV[m_simplifiedMesh.v(i)];
       }
     }
 
