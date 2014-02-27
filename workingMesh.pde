@@ -83,7 +83,10 @@ class WorkingMesh extends Mesh
 
   private int findSmallestExpansionCorner( int lod, int corner )
   {
-    print("Find smallest expansion corner for corner " + corner + "LOD and LOD swing " + lod + " " + m_LOD[v(n(s(corner)))] + "\n");
+    if (DEBUG && DEBUG_MODE >= VERBOSE )
+    {
+      print("Find smallest expansion corner for corner " + corner + "LOD and LOD swing " + lod + " " + m_LOD[v(n(s(corner)))] + "\n");
+    }
     int minTriangle = maxnt;
     int currentCorner = corner;
     int smallestCorner = corner;
@@ -105,7 +108,10 @@ class WorkingMesh extends Mesh
         {
           break;
         }
-        print("Skipping corner " + currentCorner + "\n");
+        if ( DEBUG && DEBUG_MODE >= VERBOSE )
+        {
+          print("Skipping corner " + currentCorner + "\n");
+        }
         currentCorner = s(currentCorner);
       }
     } 
@@ -115,7 +121,10 @@ class WorkingMesh extends Mesh
 
   private int[] getExpansionCornerNumbers(int lod, int corner)
   {
-    print("Get expansion corner numbers for lod " + lod + " " + m_LOD[v(corner)] + "\n");
+    if ( DEBUG && DEBUG_MODE >= VERBOSE )
+    {
+      print("Get expansion corner numbers for lod " + lod + " " + m_LOD[v(corner)] + "\n");
+    }
     int []result = new int[3];
     int numResults = 0;
     int currentCorner = findSmallestExpansionCorner(lod, corner);
@@ -175,7 +184,10 @@ class WorkingMesh extends Mesh
   void addTriangle( int v1, int v2, int v3, int orderT, int ageT, boolean fCallThisClass )
   {
     addTriangle(v1, v2, v3);
-    print("Adding triangle with order " + orderT + "\n");
+    if ( DEBUG && DEBUG_MODE >= VERBOSE )
+    {
+      print("Adding triangle with order " + orderT + "\n");
+    }
     m_orderT[nt-1] = orderT;
     m_ageT[nt - 1] = ageT;     
   }
@@ -278,13 +290,19 @@ class WorkingMesh extends Mesh
     if (lod >= 0)
     {
       homogenize(corner);
-      print("Homogenized");
+      if ( DEBUG && DEBUG_MODE >= VERBOSE )
+      {
+        print("Homogenized");
+      }
       int orderV = m_orderV[vertex];
       pt[] result = m_packetFetcher.fetchGeometry(lod, orderV);
       if (result[1] != null && lod >= 0)
       {
         int[] ct = getExpansionCornerNumbers(lod, corner);
-        print("Stiching using corners " + ct[0] + " " + ct[1] + " " + ct[2] + "\n");
+        if ( DEBUG && DEBUG_MODE >= VERBOSE )
+        {
+          print("Stiching using corners " + ct[0] + " " + ct[1] + " " + ct[2] + "\n");
+        }
         stitch( result, lod, orderV, ct );
       }
     }

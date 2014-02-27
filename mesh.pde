@@ -409,7 +409,7 @@ class Mesh {
       cc=b; 
       pc=b;
     }
-    if ( origCC != cc && DEBUG && DEBUG_MODE >= LOW ) { 
+    if ( origCC != cc && DEBUG && DEBUG_MODE >= VERBOSE ) { 
       print("Corner picked :" + cc + " vertex :" + v(cc) );
     }
   } // picks closest corner to X
