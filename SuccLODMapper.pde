@@ -1,4 +1,4 @@
-int NUMLODS = 3;
+int NUMLODS = 2;
 int MAXTRIANGLES = 1000000;
 
 class SuccLODMapperManager
@@ -534,6 +534,7 @@ class SuccLODMapper
     }
     for (int i = 0; i < m_base.nc; i++)
     {
+      print("Here!! " + i + " " + m_base.t(i) + " " + m_base.v(i) + "\n");
       int vertexBase = m_base.v(i);
       int tBase = m_base.t(i);
       int orderT = getOrderedTriangleNumberInBase( parent, tBase );

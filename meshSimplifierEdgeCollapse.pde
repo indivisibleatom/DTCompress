@@ -4,12 +4,12 @@ class MeshSimplifierEdgeCollapse
   private Mesh m_simplifiedMesh;
   private SuccLODMapperManager m_succLODMapperManager;
   int[][] m_vertexMappingBaseToMain;
-  int[] m_triangleMappingBaseToMain;
   int[][] m_vertexToTriagleMappingBaseToMain;
 
   //Mapping from main mesh to mesh being incrementally simplified
   int[] m_tMappingMeshTToSimplifiedT;
   int[] m_tMappingSimplifiedTToMeshT;
+  int[] m_vMappingMeshToSimplifiedV;
   
   MeshSimplifierEdgeCollapse( Mesh m, SuccLODMapperManager sLODMapperManager )
   {
@@ -17,11 +17,11 @@ class MeshSimplifierEdgeCollapse
     m_simplifiedMesh = new Mesh();
     m_succLODMapperManager = sLODMapperManager;
     m_vertexMappingBaseToMain = new int[m_mesh.nv][3];
-    m_triangleMappingBaseToMain = new int[m_mesh.nt];
     m_vertexToTriagleMappingBaseToMain = new int[m_mesh.nv][4];
 
     m_tMappingMeshTToSimplifiedT = new int[m_mesh.nt];
     m_tMappingSimplifiedTToMeshT = new int[m_mesh.nt];
+    m_vMappingMeshToSimplifiedV = new int[m_mesh.nv];
  
     m_succLODMapperManager.addLODLevel();
     m_succLODMapperManager.getActiveLODMapper().setBaseMesh(m_simplifiedMesh);
@@ -70,7 +70,6 @@ class MeshSimplifierEdgeCollapse
 
     for (int i = 0; i < m_mesh.nt; i++)
     {
-      m_triangleMappingBaseToMain[i] = i;
       m_simplifiedMesh.tm[i] = m_mesh.tm[i];
     }
     m_simplifiedMesh.nc = m_mesh.nc;
@@ -86,15 +85,19 @@ class MeshSimplifierEdgeCollapse
 
   private void moveTriangle( int fromT, int toT )
   {
+    if (DEBUG && DEBUG_MODE >= VERBOSE)
+    {
+      print("Move triangles " + fromT + " " + toT + "\n");
+    }
     m_tMappingSimplifiedTToMeshT[toT] = m_tMappingSimplifiedTToMeshT[fromT];
     m_tMappingMeshTToSimplifiedT[m_tMappingSimplifiedTToMeshT[fromT]] = toT;
     Mesh m = m_simplifiedMesh;
+    m.tm[toT] = m.tm[fromT];
     for (int i = 0; i < 3; i++)
     {
       m.V[3*toT + i] = m.V[3*fromT + i];
       m.O[3*toT + i] = m.O[3*fromT + i];
       m.O[m.O[3*toT + i]] = 3*toT + i;
-      m.tm[3*toT + i] = m.tm[3*fromT + i];
     }
   }
   
@@ -102,39 +105,29 @@ class MeshSimplifierEdgeCollapse
   {
     //Copy the last triangles here
     Mesh m = m_simplifiedMesh;
-    m.nc -= 6;
-    m.nt -= 2;
     int move1 = t1 == m.nt - 1 ? 0 : t1 == m.nt - 2 ? 1 : 2;
     int move2 = t2 == m.nt - 1 ? 0 : t2 == m.nt - 2 ? 1 : 2;
     if ( move1+move2 == 1 ) //The two are the last and the second last
     {
+      m.nc -= 6;
+      m.nt -= 2;
       return;
     }
     
-    int[] triangleMoved1 = {-1, -1};
-    int[] triangleMoved2 = {-1, -1};
     if ( move1 + move2 == 4 )
     {
       moveTriangle( m.nt-1, t1 );
       moveTriangle( m.nt-2, t2 );
-      triangleMoved1[0] = m.nt-1;
-      triangleMoved2[0] = m.nt-2;
-      triangleMoved1[1] = t1;
-      triangleMoved2[1] = t2;
     }
     else if ( move1 == 2 )
     {
       if ( move2 != 0 )
       {
         moveTriangle( m.nt-1, t1 );
-        triangleMoved1[0] = m.nt - 1;
-        triangleMoved1[1] = t1;
       }
       else
       {
         moveTriangle( m.nt-2, t1 );
-        triangleMoved1[0] = m.nt - 2;
-        triangleMoved1[1] = t1;
       }
     }
     else if ( move2 == 2 )
@@ -142,16 +135,21 @@ class MeshSimplifierEdgeCollapse
       if ( move1 != 0 )
       {
         moveTriangle( m.nt-1, t2 );
-        triangleMoved1[0] = m.nt - 1;
-        triangleMoved1[1] = t2;
       }
       else
       {
         moveTriangle( m.nt-2, t2 );
-        triangleMoved1[0] = m.nt - 2;
-        triangleMoved1[1] = t2;
       }
-    }  
+    }
+    else
+    {
+      if ( DEBUG && DEBUG_MODE >= LOW )
+      {
+        print("MeshSimplifierEdgeCollapse::removeTriangles No condition met!!\n");
+      }
+    }
+    m.nc -= 6;
+    m.nt -= 2;
   }
 
   //Collapse to a new vertex. Add this new vertex to lower location of G table and modify O, V and G tables
@@ -199,7 +197,7 @@ class MeshSimplifierEdgeCollapse
   Mesh simplify()
   {
     copyMainToSimplifiedMesh();
-
+  
     int numBaseTriangles = 0;   
     for (int i = 0; i < m_mesh.nt; i++)
     {
@@ -217,19 +215,24 @@ class MeshSimplifierEdgeCollapse
           int o = m_simplifiedMesh.o(c);
           int lMain = m_mesh.l(m_mesh.c(i));
           int rMain = m_mesh.r(m_mesh.c(i));
-
-          pt newPt = centroid(m_mesh, i);
-          int commonVertexIndex = edgeCollapse( c, o, newPt );
           
+          if (m_simplifiedMesh.tm[simplifiedT] != ISLAND)
+          {
+            if ( DEBUG && DEBUG_MODE >= LOW )
+            {
+              print("MeshSimplifier:simplify - simplifiedMesh.tm[simplifiedT] is not an island, while the main mesh is!\n");
+            }
+          }
+          
+          pt newPt = centroid(m_mesh, i);
+          int commonVertexIndex = edgeCollapse( c, o, newPt );        
           int l = m_simplifiedMesh.c(m_tMappingMeshTToSimplifiedT[m_mesh.t(lMain)]) + lMain%3;
           int r = m_simplifiedMesh.c(m_tMappingMeshTToSimplifiedT[m_mesh.t(rMain)]) + rMain%3;
-
+          commonVertexIndex = edgeCollapse( l, r, newPt );
           if (DEBUG && DEBUG_MODE >= VERBOSE)
           {
             print(c + " " + o + " " + l + " " + r + "\n");
           }
-
-          commonVertexIndex = edgeCollapse( l, r, newPt );
           
           m_vertexMappingBaseToMain[commonVertexIndex][0] = m_mesh.v(m_mesh.c(i));
           m_vertexMappingBaseToMain[commonVertexIndex][1] = m_mesh.v(m_mesh.n(m_mesh.c(i)));
@@ -245,6 +248,7 @@ class MeshSimplifierEdgeCollapse
     int countV = 0;
     for (int i = 0; i < m_mesh.nv; i++)
     {
+      m_vMappingMeshToSimplifiedV[i] = -1;
       if ( m_simplifiedMesh.G[i] != null )
       {
         m_vertexMappingBaseToMain[countV] = m_vertexMappingBaseToMain[i];
@@ -253,19 +257,47 @@ class MeshSimplifierEdgeCollapse
     }
 
     int indexNotNull = 0;
-    for (int i = 0; i < m_mesh.nv; i++)
+    for (int i = 0; i < m_mesh.nv; i++, indexNotNull++)
     {
       if ( m_simplifiedMesh.G[i] == null )
       {
         m_simplifiedMesh.nv--;
-        while ( indexNotNull < m_mesh.nv && m_simplifiedMesh.G[indexNotNull] == null )
+      }
+      while ( indexNotNull < m_mesh.nv && m_simplifiedMesh.G[indexNotNull] == null )
+      {
+        indexNotNull++;
+      }
+      if (indexNotNull < m_mesh.nv)
+      {
+        m_vMappingMeshToSimplifiedV[indexNotNull] = i;
+        m_simplifiedMesh.G[i] = m_simplifiedMesh.G[indexNotNull];
+      }
+    }
+    
+    for (int i = 0; i < m_mesh.nc; i++)
+    {
+      m_simplifiedMesh.V[i] = m_vMappingMeshToSimplifiedV[m_simplifiedMesh.V[i]];
+    }
+
+    if ( DEBUG && DEBUG_MODE >= LOW )
+    {
+      if ( indexNotNull != m_mesh.nv )
+      {
+        for (int i = indexNotNull; i < m_mesh.nv; i++)
         {
-          indexNotNull++;
+          if ( m_simplifiedMesh.G[i] != null )
+          {
+            print("Mesh::simplify - simplified mesh has a G with a non-numm entry remaining in the end \n");
+          }
         }
-        if ( indexNotNull != m_mesh.nv )
-        {
-          m_simplifiedMesh.G[i] = m_simplifiedMesh.G[indexNotNull];
-        }
+      }
+    
+      for (int i = 0; i < m_simplifiedMesh.nv; i++)
+      {
+       if ( m_simplifiedMesh.G[i] == null )
+       {
+         print("Mesh::simplify - simplified mesh has a G with a null entry");
+       }
       }
     }
 
