@@ -55,7 +55,12 @@ class SuccLODMapperManager
       m_sucLODMapper[i].createGExpansionPacket( ( (i == NUMLODS-1)?null : m_sucLODMapper[i+1]) );
       m_sucLODMapper[i].createTriangleNumberings( ( (i == NUMLODS-1)?null : m_sucLODMapper[i+1]), m_sucLODMapper[NUMLODS-1].getBaseTriangles() );
       print("LOD " + i + "\n");
-      m_sucLODMapper[i].checkNumberings();
+      
+      if ( DEBUG && DEBUG_MODE >= VERBOSE )
+      {
+        m_sucLODMapper[i].checkNumberings(); //Enable for debug
+      }
+
       m_sucLODMapper[i].createEdgeExpansionPacket( ( (i == NUMLODS-1)?null : m_sucLODMapper[i+1]), m_sucLODMapper[NUMLODS-1].getBaseTriangles() );
     }
   }
@@ -241,9 +246,32 @@ class SuccLODMapper
     for (int i = 0; i < m_triangleNumberings.length; i++)
     {
       if ( m_triangleNumberings[i] == triangleRefined )
+      {
+        if (m_refinedTriangleToOrderedTriangle[triangleRefined] != i)
+        {
+          print("SuccLODMapper::findOrderedTriangle - bug in the population of m_refinedTriangleToOrderedTriangle!\n");
+        }
         return i;
+      }
     }
     return -1;
+  }
+  
+  private void populateRefinedToOrderedTriangles()
+  {
+    m_refinedTriangleToOrderedTriangle = new int[m_refined.nt];
+    for (int i = 0; i < m_refined.nt; i++)
+    {
+      m_refinedTriangleToOrderedTriangle[i] = -1;
+    }
+
+    for (int i = 0; i < m_triangleNumberings.length; i++)
+    {
+      if ( m_triangleNumberings[i] != -1 && m_refinedTriangleToOrderedTriangle[m_triangleNumberings[i]] == -1 )
+      {
+        m_refinedTriangleToOrderedTriangle[m_triangleNumberings[i]] = i;
+      }
+    }
   }
 
   void createTriangleNumberings(SuccLODMapper parent, int numBaseTriangles)
@@ -328,11 +356,7 @@ class SuccLODMapper
       }
     }
 
-    m_refinedTriangleToOrderedTriangle = new int[m_refined.nt];
-    for (int i = 0; i < m_refinedTriangleToOrderedTriangle.length; i++)
-    {
-      m_refinedTriangleToOrderedTriangle[i] = findOrderedTriangle(i); //TODO msati3: faster by caching
-    }
+    populateRefinedToOrderedTriangles();
   }
   
   private int getVertexNumbering(int vertex)
@@ -454,10 +478,6 @@ class SuccLODMapper
           print("Yes. Correct " + t1 + " " + t2 + " " + t3 + " " + offset1 + " " + offset2 + " " + offset3 + "\n");
         }
         
-        /*int t1 = getOrderedTriangleNumberInBase( parent, getTriangleNumbering(baseTriangle1) );
-        int t2 = getOrderedTriangleNumberInBase( parent, getTriangleNumbering(baseTriangle2) );
-        int t3 = getOrderedTriangleNumberInBase( parent, getTriangleNumbering(baseTriangle3) );*/
-        
         m_edgeExpansionPacket[3*t1 + offset1] = true;
         m_edgeExpansionPacket[3*t2 + offset2] = true;
         m_edgeExpansionPacket[3*t3 + offset3] = true;        
@@ -481,10 +501,6 @@ class SuccLODMapper
       {
         if (m_refined.v(currentCorner) == vertexInRefined[i] && m_refined.tm[m_refined.t(m_refined.s(currentCorner))] == CHANNEL && m_refined.tm[m_refined.t(m_refined.s(m_refined.s(currentCorner)))] == ISLAND)
         {
-          /*if ( baseT == 1 || baseT == 122 || baseT == 53 )
-          {
-            print("\nCorner in refined " + currentCorner + " " + baseT + " " + triangleInRefined + "\n");
-          }*/
           return currentCorner;
         }
         currentCorner = m_refined.n(currentCorner);
@@ -530,23 +546,14 @@ class SuccLODMapper
     }
     for (int i = 0; i < m_base.nc; i++)
     {
-      //print("Here!! " + i + " " + m_base.t(i) + " " + m_base.v(i) + "\n");
       int vertexBase = m_base.v(i);
       int tBase = m_base.t(i);
       int orderT = getOrderedTriangleNumberInBase( parent, tBase );
       int corner = findCornerInRefined( vertexBase, tBase );
-      /*if (vertexBase == 2)
-      {
-        print("Order t " + orderT + "tBase " + tBase + " " + corner + " " + minTPerVBase[vertexBase] + "\n");
-      }*/
       if ( corner != -1 ) //If expandable
       {
         if ( orderT < minTPerVBase[vertexBase] )
         {
-          /*if ( vertexBase == 2 )
-          {
-            print("I am here " + orderT + "\n");
-          }*/
           minTPerVBase[vertexBase] = orderT;
           cornerRefinedPerVBase[vertexBase] = corner;
         }
@@ -568,7 +575,6 @@ class SuccLODMapper
         }
         if ( (cornerIsland%3) != 0)
         {
-          //print("Fixing up corner in refined " + cornerIsland + "\n");
           fixupTriangleCorners( cornerIsland );
           int offset = (cornerIsland%3);
           m_refined.m_tOffsets[m_refined.t(cornerIsland)] = offset;
@@ -595,7 +601,6 @@ class SuccLODMapper
         if (m_baseToRefinedVMap[vertexNumberings[i]][j] == -1)
         {
           m_GExpansionPacket[3*i+j] = null;
-          //m_GExpansionPacket[3*i+j] = P(m_refined.G[m_baseToRefinedVMap[vertexNumberings[i]][0]]);
           m_vertexNumberings[3*i+j] = m_baseToRefinedVMap[vertexNumberings[i]][0];
         }
         else
