@@ -1,4 +1,4 @@
-int NUMLODS = 4;
+int NUMLODS = 6;
 int MAXTRIANGLES = 1000000;
 
 class SuccLODMapperManager

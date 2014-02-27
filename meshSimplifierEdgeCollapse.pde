@@ -196,6 +196,8 @@ class MeshSimplifierEdgeCollapse
 
   Mesh simplify()
   {
+    print("Starting simplification \n");
+    int feedBackTime = 10000;
     copyMainToSimplifiedMesh();
   
     int numBaseTriangles = 0;   
@@ -222,6 +224,11 @@ class MeshSimplifierEdgeCollapse
             {
               print("MeshSimplifier:simplify - simplifiedMesh.tm[simplifiedT] is not an island, while the main mesh is!\n");
             }
+          }
+          
+          if ( i % feedBackTime == 0 )
+          {
+            print("Edge collapse - processed " + i + " triangles \n");
           }
           
           pt newPt = centroid(m_mesh, i);
@@ -313,6 +320,7 @@ class MeshSimplifierEdgeCollapse
     m_succLODMapperManager.getActiveLODMapper().setBaseToRefinedTMap(m_tMappingSimplifiedTToMeshT);
     m_succLODMapperManager.getActiveLODMapper().setBaseVToRefinedTMap(m_vertexToTriagleMappingBaseToMain);
     print("Num vertices " + m_simplifiedMesh.nv + " Num triangles " + m_simplifiedMesh.nt + "\n");
+    print("Starting simplification \n");
     return m_simplifiedMesh;
   }
 }

@@ -200,22 +200,20 @@ class IslandCreator
         addPossiblesToFifo(newPossibles, numPossibles);
       }
     }
-    if ( DEBUG && DEBUG_MODE >= LOW )
-    {
-      printStats();
-    }
     return numberExpandable;
   }
   
   private void internalCreateIslandsPass2()
   {
-    /*for (int i = 0; i < m_mesh.nt; i++)
+    for (int i = 0; i < m_mesh.nt; i++)
     {
-      if (canCreateIsland(i))
+      if (validTriangle(i*3))
       {
         visitTriangle(m_mesh.c(i));
       }
-    }*/
+      m_cornerFifo.add(m_seed);
+      internalCreateIslandsPass1();
+    }
   }
   
   //Offsets the corners in a mesh
@@ -246,10 +244,6 @@ class IslandCreator
       if ( channelOffset != 0 )
       {
         changeCorners( m_mesh.c(m_mesh.t(channelCorner)), channelOffset );
-        if (m_mesh.t(channelCorner) == 18)
-        {
-          print("Here " + channelOffset + "\n");
-        }
         m_mesh.m_tOffsets[m_mesh.t(channelCorner)] = channelOffset;
       }
       currentCorner = m_mesh.n(currentCorner);
@@ -292,6 +286,11 @@ class IslandCreator
     print("Seed " + m_seed + "\n");
     
     internalCreateIslandsPass2();
+    
+    if ( DEBUG && DEBUG_MODE >= LOW )
+    {
+      printStats();
+    }
 
     for (int i = 0; i < m_mesh.nt; i++)
     {
@@ -306,5 +305,6 @@ class IslandCreator
    {
      m_mesh.vm[i] = 0;
    }
+   print("Done creating islands \n");
  }
 }
