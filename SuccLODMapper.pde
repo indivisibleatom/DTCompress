@@ -125,7 +125,7 @@ class SuccLODMapper
 
   private void printVertexNumberings( int vertex, boolean useParent )
   {
-    /*if ( useParent )
+    if ( useParent )
     {
       for (int i = 0; i < m_parent.m_vertexNumberings.length; i++)
       {
@@ -144,12 +144,12 @@ class SuccLODMapper
           print(i + " ");
         }
       }
-    }*/
+    }
   }
   
   private void printTriangleNumberings( int triangle, boolean useParent )
   {
-    /*if ( useParent )
+    if ( useParent )
     {
       for (int i = 0; i < m_parent.m_triangleNumberings.length; i++)
       {
@@ -168,7 +168,7 @@ class SuccLODMapper
           print(i + " ");
         }
       }
-    }*/
+    }
   }
     
   void printVertexMapping(int corner, int meshNumber)
@@ -187,12 +187,12 @@ class SuccLODMapper
     {
       print("VertexNumbering for vertex ");
       int vertex = m_base.v(corner);
-      printVertexNumberings( vertex, true );
+      printVertexNumberings( vertex, false );
       print("\n");
       
       print("TriangleNumbering for triangle ");
       int triangle = m_base.t(corner);
-      printTriangleNumberings( triangle, true );
+      printTriangleNumberings( triangle, false );
       print("\n");
     }
     if (meshNumber == 0)
@@ -390,10 +390,6 @@ class SuccLODMapper
         int lowestCorner = m_refined.c(refinedTriangle);
         m_base.m_tOffsets[i] = offset;
         m_refined.m_tOffsets[refinedTriangle] = offset;
-        if (i == 238)
-        {
-           print("Here " + parent.m_refined.m_tOffsets[i] + " " + lowestCorner + "\n");
-        }
         fixupTriangleCorners( lowestCorner + offset );
       }
     }
@@ -534,7 +530,7 @@ class SuccLODMapper
     }
     for (int i = 0; i < m_base.nc; i++)
     {
-      print("Here!! " + i + " " + m_base.t(i) + " " + m_base.v(i) + "\n");
+      //print("Here!! " + i + " " + m_base.t(i) + " " + m_base.v(i) + "\n");
       int vertexBase = m_base.v(i);
       int tBase = m_base.t(i);
       int orderT = getOrderedTriangleNumberInBase( parent, tBase );

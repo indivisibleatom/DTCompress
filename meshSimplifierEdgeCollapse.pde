@@ -240,8 +240,8 @@ class MeshSimplifierEdgeCollapse
 
           m_vertexToTriagleMappingBaseToMain[commonVertexIndex][0] = i;
           m_vertexToTriagleMappingBaseToMain[commonVertexIndex][1] = m_mesh.t(m_mesh.u(m_mesh.c(i)));
-          m_vertexToTriagleMappingBaseToMain[commonVertexIndex][2] = m_mesh.t(m_mesh.u(m_mesh.n(i)));
-          m_vertexToTriagleMappingBaseToMain[commonVertexIndex][3] = m_mesh.t(m_mesh.u(m_mesh.p(i)));
+          m_vertexToTriagleMappingBaseToMain[commonVertexIndex][2] = m_mesh.t(m_mesh.u(m_mesh.n(m_mesh.c(i))));
+          m_vertexToTriagleMappingBaseToMain[commonVertexIndex][3] = m_mesh.t(m_mesh.u(m_mesh.p(m_mesh.c(i))));
        }
     }
 
@@ -274,6 +274,14 @@ class MeshSimplifierEdgeCollapse
       }
     }
     
+    if (DEBUG && DEBUG_MODE >= LOW)
+    {
+      if ( countV != m_simplifiedMesh.nv )
+      {
+        print("MeshSimplifierEdgeCollapse::simplify - the simplified mesh count doesn't agree via two alternative methods\n");
+      }
+    }
+    
     for (int i = 0; i < m_mesh.nc; i++)
     {
       m_simplifiedMesh.V[i] = m_vMappingMeshToSimplifiedV[m_simplifiedMesh.V[i]];
@@ -287,7 +295,7 @@ class MeshSimplifierEdgeCollapse
         {
           if ( m_simplifiedMesh.G[i] != null )
           {
-            print("Mesh::simplify - simplified mesh has a G with a non-numm entry remaining in the end \n");
+            print("MeshSimplifierEdgeCollapse::simplify - simplified mesh has a G with a non-numm entry remaining in the end \n");
           }
         }
       }

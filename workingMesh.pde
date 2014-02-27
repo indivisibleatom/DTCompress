@@ -225,11 +225,6 @@ class WorkingMesh extends Mesh
         }
         if ( m_ageT[t(i)] >=  lod )
         {
-          if (i == 255)
-          {
-            print("Here" + cornerOffset);
-          }
-
           boolean expand = m_packetFetcher.fetchConnectivity(lod, 3*orderT + cornerOffset);
           if (expand)
           {
@@ -251,10 +246,6 @@ class WorkingMesh extends Mesh
               if (currentCorner == i)
               {
                 break;
-              }
-              if (i == 255)
-              {
-                print("Here as well\n");
               }
 
               cornerOffset = currentCorner%3;
