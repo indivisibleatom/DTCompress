@@ -47,6 +47,7 @@ class Mesh {
   int nvr=0, ntr=0, ncr=0; // remember state to restore
   int cc=0, pc=0, sc=0;                      // current, previous, saved corners
   float vol=0, surf=0;                      // vol and surface
+  int m_meshNumber;
 
   // primary tables
   int[] V = new int [3*maxnt];               // V table (triangle/vertex indices)
@@ -116,6 +117,11 @@ class Mesh {
   Mesh() 
   {
     m_userInputHandler = new MeshUserInputHandler(this);
+  }
+
+  void setMeshNumber( int meshNumber )
+  {
+    m_meshNumber = meshNumber;
   }
 
   void copyTo(Mesh M) {
@@ -2059,6 +2065,10 @@ class Mesh {
 
   //Interaction of mesh class with outside objects. TODO msati3: Better ways of handling this?
   void setViewport(Viewport viewport) {
+    if ( DEBUG && DEBUG_MODE >= LOW )
+    {
+      print("Setting viewport for " + m_meshNumber + " to " + viewport );
+    }
     m_viewport = viewport;
   }
 

@@ -265,7 +265,7 @@ class IslandCreator
     int maxCreated = 0;
     while (numTries < 1)
     {
-      /*for (int i = 0; i < 100; i++)
+      for (int i = 0; i < 100; i++)
       {
         m_seed = retrySeed();
         if ( validTriangle(m_seed) )
@@ -276,8 +276,7 @@ class IslandCreator
         {
           m_seed = -1;
         }
-      }*/
-      m_seed = 10;
+      }
       if ( m_seed != -1 )
       {
         m_cornerFifo.add(m_seed);
