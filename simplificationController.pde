@@ -23,7 +23,7 @@ class SimplificationController
   m_lodMapperManager = new SuccLODMapperManager();
   m_baseMesh = null;
   m_islandMesh.declareVectors();  
-  m_islandMesh.loadMeshVTS("data/new.vts");
+  m_islandMesh.loadMeshVTS("data/horse.vts");
   m_islandMesh.updateON(); // computes O table and normals
   m_islandMesh.resetMarkers(); // resets vertex and tirangle markers
   m_islandMesh.computeBox();
@@ -189,7 +189,7 @@ class SimplificationController
  
  private void changeIslandMesh(IslandMesh m)
  {
-   print("Changing island mesh");
+   print("Changing island mesh\n");
    m_viewportManager.unregisterMeshFromViewport( m_displayMeshes.get(m_maxMesh), m_maxMesh - m_minMesh );
    m_displayMeshes.set( m_maxMesh, m );
    m_islandMesh = m;

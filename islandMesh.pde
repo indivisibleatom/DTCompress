@@ -2244,7 +2244,7 @@ class IslandMesh extends Mesh
    }
    if ( DEBUG && DEBUG_MODE >= LOW )
    {
-     print("\nStats : Total " + nt + " Land " + countLand + " Good water " + countGood + " Island separators " + countSeparator + " Lagoons " + countLagoons + " Bad water " + countBad + "Num Water Verts " + numWaterVerts);
+     print("\nStats : Total vertices " + nv + " Total triangles " + nt + " Land " + countLand + " Good water " + countGood + " Island separators " + countSeparator + " Lagoons " + countLagoons + " Bad water " + countBad + "Num Water Verts " + numWaterVerts);
    }
      
    //TODO msati3: This is a hack. Should be made a separate function

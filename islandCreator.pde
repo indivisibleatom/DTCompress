@@ -77,7 +77,7 @@ class IslandCreator
         print("IslandCreator::printStats - Error!! Some other type of triangle exists as well!\n");
       }
     }
-    print("Stats num triangles " + m_mesh.nt + " islands " + numIsland + " channels " + numChannel + " others " + numOthers + " average valence " + averageValence + " max valence " + maxValence + "\n");
+    print("Stats num vertices " + m_mesh.nv + " num triangles " + m_mesh.nt + " islands " + numIsland + " channels " + numChannel + " others " + numOthers + " average valence " + averageValence + " max valence " + maxValence + "\n");
   }
   
   private int retrySeed()
@@ -263,9 +263,9 @@ class IslandCreator
     int numTries = 0;
     int maxIslandSeed = 0;
     int maxCreated = 0;
-    while (numTries < 10)
+    while (numTries < 1)
     {
-      for (int i = 0; i < 100; i++)
+      /*for (int i = 0; i < 100; i++)
       {
         m_seed = retrySeed();
         if ( validTriangle(m_seed) )
@@ -276,7 +276,8 @@ class IslandCreator
         {
           m_seed = -1;
         }
-      }
+      }*/
+      m_seed = 10;
       if ( m_seed != -1 )
       {
         m_cornerFifo.add(m_seed);
