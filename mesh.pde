@@ -49,6 +49,10 @@ class Mesh {
   float vol=0, surf=0;                      // vol and surface
   int m_meshNumber;
 
+  //Display list related
+  int m_displayList = -1;
+  boolean m_fQuickDraw = false;
+
   // primary tables
   int[] V = new int [3*maxnt];               // V table (triangle/vertex indices)
   int[] O = new int [3*maxnt];               // O table (opposite corner indices)
@@ -415,7 +419,7 @@ class Mesh {
       cc=b; 
       pc=b;
     }
-    if ( origCC != cc && DEBUG && DEBUG_MODE >= VERBOSE ) { 
+    if ( origCC != cc && DEBUG && DEBUG_MODE >= LOW ) { 
       print("Corner picked :" + cc + " vertex :" + v(cc) );
     }
   } // picks closest corner to X
@@ -899,54 +903,80 @@ class Mesh {
       fill(ramp(Mt[t], rings)); 
       showShrunkOffsetT(t, 1, 1);
     }
-  };  
+  };
+  
+  void initDisplayList()
+  {
+    print("I am here!!!!");
+    m_displayList = gl.glGenLists(1);
+    showTriangles(true, 255, m_drawingState.m_shrunk);
+  }
 
   // ********************************************************* DRAW *****************************************************
   void draw()
   {
-    noStroke();
-    if (m_drawingState.m_fPickingBack)
+    if ( m_valence2Corner != -1 )
     {
-      noStroke(); 
-      if (m_drawingState.m_fTranslucent)  
-      {
-        showTriangles(false, 100, m_drawingState.m_shrunk);
-      }
-      else 
-      {
-        showBackTriangles();
-      }
+      showCorner(m_valence2Corner, 10);
     }
-    else if (m_drawingState.m_fTranslucent)
+    
+    if (m_fQuickDraw)
     {
-      if (m_drawingState.m_fShowTriangles)
+      if (m_displayList == -1)
       {
-        fill(grey, 80); 
+        print("Here");
+        initDisplayList();
+      }
+      pgl.beginGL();
+      gl.glCallList( m_displayList );
+      pgl.endGL();
+    }
+    else
+    {
+      noStroke();
+      if (m_drawingState.m_fPickingBack)
+      {
         noStroke(); 
-        showBackTriangles();  
-        showTriangles(true, 150, m_drawingState.m_shrunk);
+        if (m_drawingState.m_fTranslucent)  
+        {
+          showTriangles(false, 100, m_drawingState.m_shrunk);
+        }
+        else 
+        {
+          showBackTriangles();
+        }
       }
-    }
-    else if (m_drawingState.m_fShowTriangles)
-    {
-      showTriangles(true, 255, m_drawingState.m_shrunk);
-    }
-    if (m_drawingState.m_fShowVertices)
-    {
-      showVertices();
-    }
-    if (m_drawingState.m_fShowCorners)
-    {
-      showCorners();
-    }
-    if (m_drawingState.m_fShowNormals)
-    {
-      showNormals();
-    }
-    if (m_drawingState.m_fShowEdges)
-    {
-      stroke(black); 
-      showEdges();
+      else if (m_drawingState.m_fTranslucent)
+      {
+        if (m_drawingState.m_fShowTriangles)
+        {
+          fill(grey, 80); 
+          noStroke(); 
+          showBackTriangles();  
+          showTriangles(true, 150, m_drawingState.m_shrunk);
+        }
+      }
+      else if (m_drawingState.m_fShowTriangles)
+      {
+        showTriangles(true, 255, m_drawingState.m_shrunk);
+      }
+      if (m_drawingState.m_fShowVertices)
+      {
+        showVertices();
+      }
+      if (m_drawingState.m_fShowCorners)
+      {
+        showCorners();
+      }
+      if (m_drawingState.m_fShowNormals)
+      {
+        showNormals();
+      }
+      if (m_drawingState.m_fShowEdges)
+      {
+        stroke(black); 
+        showEdges();
+      }
     }
   }
 
@@ -954,32 +984,35 @@ class Mesh {
   {       
     // -------------------------------------------------------- display picked points and triangles ----------------------------------   
     fill(163, 73, 164); 
-    showSOT(); // shoes triangle t(cc) shrunken
-    showcc();  // display corner markers: seed sc (green),  current cc (red)
+    if (!m_fQuickDraw)
+    {
+      showSOT(); // shoes triangle t(cc) shrunken
+      showcc();  // display corner markers: seed sc (green),  current cc (red)
 
     // -------------------------------------------------------- display FRONT if we were picking on the back ---------------------------------- 
-    if (getDrawingState().m_fPickingBack) 
-    {
-      if (getDrawingState().m_fTranslucent) {
-        fill(cyan, 150); 
-        if (getDrawingState().m_fShowEdges) stroke(orange); 
-        else noStroke(); 
-        showTriangles(true, 100, m_drawingState.m_shrunk);
-      } 
-      else {
-        fill(cyan); 
-        if (getDrawingState().m_fShowEdges) stroke(orange); 
-        else noStroke(); 
-        showTriangles(true, 255, m_drawingState.m_shrunk);
+      if (getDrawingState().m_fPickingBack) 
+      {
+        if (getDrawingState().m_fTranslucent) {
+          fill(cyan, 150); 
+          if (getDrawingState().m_fShowEdges) stroke(orange); 
+          else noStroke(); 
+          showTriangles(true, 100, m_drawingState.m_shrunk);
+        } 
+        else {
+          fill(cyan); 
+          if (getDrawingState().m_fShowEdges) stroke(orange); 
+          else noStroke(); 
+          showTriangles(true, 255, m_drawingState.m_shrunk);
+        }
       }
+  
+      // -------------------------------------------------------- Disable z-buffer to display occluded silhouettes and other things ---------------------------------- 
+      hint(DISABLE_DEPTH_TEST);  // show on top
+      if (getDrawingState().m_fSilhoutte) {
+        stroke(dbrown); 
+        drawSilhouettes();
+      }  // display silhouettes
     }
-
-    // -------------------------------------------------------- Disable z-buffer to display occluded silhouettes and other things ---------------------------------- 
-    hint(DISABLE_DEPTH_TEST);  // show on top
-    if (getDrawingState().m_fSilhoutte) {
-      stroke(dbrown); 
-      drawSilhouettes();
-    }  // display silhouettes
   }
 
   DrawingState getDrawingState()

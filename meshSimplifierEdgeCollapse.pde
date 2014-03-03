@@ -157,7 +157,7 @@ class MeshSimplifierEdgeCollapse
   
   private int edgeCollapse( int c1, int c2, pt vertex )
   {
-    numTimes++;
+    numTimes = 0;
     if ( DEBUG && DEBUG_MODE >= VERBOSE)
     {
       print("Edge collapse " + c1 + "  " + c2 + "\n");
@@ -176,8 +176,14 @@ class MeshSimplifierEdgeCollapse
     int currentCorner = higherC;
     do
     {
+      numTimes++;
       m.V[currentCorner] = lowerV;
       currentCorner = m.s(currentCorner);
+      if ( numTimes > 100 )
+      {
+        print("Stuck here");
+        return lowerV;
+      }
     }while (currentCorner != higherC);
 
     //Populate opposites

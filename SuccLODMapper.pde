@@ -130,7 +130,7 @@ class SuccLODMapper
 
   private void printVertexNumberings( int vertex, boolean useParent )
   {
-    if ( useParent )
+    /*if ( useParent )
     {
       for (int i = 0; i < m_parent.m_vertexNumberings.length; i++)
       {
@@ -149,12 +149,12 @@ class SuccLODMapper
           print(i + " ");
         }
       }
-    }
+    }*/
   }
   
   private void printTriangleNumberings( int triangle, boolean useParent )
   {
-    if ( useParent )
+    /*if ( useParent )
     {
       for (int i = 0; i < m_parent.m_triangleNumberings.length; i++)
       {
@@ -173,7 +173,7 @@ class SuccLODMapper
           print(i + " ");
         }
       }
-    }
+    }*/
   }
     
   void printVertexMapping(int corner, int meshNumber)

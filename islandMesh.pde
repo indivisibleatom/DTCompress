@@ -147,80 +147,87 @@ class IslandMesh extends Mesh
  //Adds morphing to base mesh, aside from normal functionality of a mesh
  void draw()
  {
-   if (m_fMorphing)
+   if ( m_fQuickDraw )
    {
-     if (!m_fCollapsed)
-     {
-        morphToBaseMesh();
-     }
-     else
-     {
-        morphFromBaseMesh();
-     }
+     super.draw();
    }
-   super.draw();
-   m_drawingState.m_fShowEdges = false;
-   drawIsland();
-   
-   if ( m_fScreenShotColor )
+   else
    {
-     if ( m_coloringState >= 3 )
+     if (m_fMorphing)
      {
-       for (int i = 0; i < nv; i++)
+       if (!m_fCollapsed)
        {
-         if (isWaterVertex(i))
-         {
-           fill(red);
-           show(G[i], 4);
-         }
+          morphToBaseMesh();
+       }
+       else
+       {
+          morphFromBaseMesh();
        }
      }
-     if ( m_coloringState < 3 )
+     super.draw();
+     m_drawingState.m_fShowEdges = false;
+     drawIsland();
+     
+     if ( m_fScreenShotColor )
      {
-       if ( m_fRingExpanderRun )
+       if ( m_coloringState >= 3 )
        {
-         for (int i = 0; i < 3*nt; i++)
+         for (int i = 0; i < nv; i++)
          {
-           if (hasRingEdgeAroundCorners(p(i)))
+           if (isWaterVertex(i))
            {
-             strokeWeight(4);
-             stroke(black);
-             drawEdge(p(i));
+             fill(red);
+             show(G[i], 4);
            }
-           else if (hasRingEdgeAroundCorners(n(i)))
+         }
+       }
+       if ( m_coloringState < 3 )
+       {
+         if ( m_fRingExpanderRun )
+         {
+           for (int i = 0; i < 3*nt; i++)
            {
-             strokeWeight(4);
-             stroke(black);
-             drawEdge(n(i));
+             if (hasRingEdgeAroundCorners(p(i)))
+             {
+               strokeWeight(4);
+               stroke(black);
+               drawEdge(p(i));
+             }
+             else if (hasRingEdgeAroundCorners(n(i)))
+             {
+               strokeWeight(4);
+               stroke(black);
+               drawEdge(n(i));
+             }
+             else
+             {
+               strokeWeight(1);
+               stroke(red);
+               drawEdge(n(i));
+               drawEdge(p(i));
+             }
            }
-           else
+         }
+         else
+         {
+           stroke(red);
+           for (int i = 0; i < 3*nt; i++)
            {
-             strokeWeight(1);
-             stroke(red);
              drawEdge(n(i));
-             drawEdge(p(i));
            }
          }
        }
        else
        {
-         stroke(red);
-         for (int i = 0; i < 3*nt; i++)
-         {
-           drawEdge(n(i));
-         }
        }
      }
      else
      {
-     }
-   }
-   else
-   {
-     stroke(black);
-     for (int i = 0; i < 3*nt; i++)
-     {
-       drawEdge(n(i));
+       stroke(black);
+       for (int i = 0; i < 3*nt; i++)
+       {
+         drawEdge(n(i));
+       }
      }
    }
  }

@@ -23,7 +23,8 @@ class SimplificationController
   m_lodMapperManager = new SuccLODMapperManager();
   m_baseMesh = null;
   m_islandMesh.declareVectors();  
-  m_islandMesh.loadMeshVTS("data/new.vts");
+  m_islandMesh.loadMeshVTS("data/horse.vts");
+  checkCorrect();
   m_islandMesh.updateON(); // computes O table and normals
   m_islandMesh.resetMarkers(); // resets vertex and tirangle markers
   m_islandMesh.computeBox();
@@ -34,6 +35,32 @@ class SimplificationController
   //m_displayMeshes.add(m_islandMesh);
   //m_viewportManager.registerMeshToViewport( m_islandMesh, 0 );
   for(int i=0; i<20; i++) vis[i]=true; // to show all types of triangles
+ }
+ 
+ void checkCorrect()
+ {
+   print("On swinging " + m_islandMesh.s( 20000 ) + "\n");
+   /*int totalTimes = 0;
+   for (int i = 0; i < m_islandMesh.nc; i++)
+   {
+     int currentCorner = i;
+     int numTimes = 0;
+     if (totalTimes > 100)
+     {
+       break;
+     }
+     do
+     {
+       numTimes++;
+       if ( numTimes > 100 )
+       {
+         totalTimes++;
+         print("More than 100 times at corner " + i + " " + currentCorner + "\n" );
+         break;
+       }
+       currentCorner = m_islandMesh.s( currentCorner );
+     } while ( currentCorner != i );
+   }*/
  }
  
  ViewportManager viewportManager()

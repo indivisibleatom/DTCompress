@@ -13,6 +13,7 @@ import com.google.common.collect.*;
 
 GL gl; 
 GLU glu; 
+PGraphicsOpenGL pgl;
 
 // ****************************** GLOBAL VARIABLES FOR DISPLAY OPTIONS *********************************
 Boolean showMesh=true, labels=false, 
@@ -34,7 +35,9 @@ void setup() {
   setColors(); sphereDetail(3); 
   PFont font = loadFont("GillSans-24.vlw"); textFont(font, 20);  // font for writing labels on 
   
-  glu= ((PGraphicsOpenGL) g).glu;  PGraphicsOpenGL pgl = (PGraphicsOpenGL) g;  gl = pgl.beginGL();  pgl.endGL();
+  glu= ((PGraphicsOpenGL) g).glu;  
+  pgl = (PGraphicsOpenGL) g;
+  gl = pgl.beginGL();  pgl.endGL();
   
   g_controller = new SimplificationController(); //The controlling object for the project
 }

@@ -1,4 +1,5 @@
 int LOD = 0; //TODO msati3: DebugHack
+int m_valence2Corner = -1;
 
 class IslandCreator
 {
@@ -57,6 +58,30 @@ class IslandCreator
     }
     averageValence = totalValence / m_mesh.nv;
     
+    for (int i = 0; i < m_mesh.nv; i++)
+    {
+      m_mesh.vm[i] = 0;
+    }
+    int[] valenceBin = new int[maxValence+1];
+    for (int i = 0; i < maxValence+1; i++)
+    {
+      valenceBin[i] = 0;
+    }
+    for (int i = 0; i < m_mesh.nc; i++)
+    {
+      if (m_mesh.vm[m_mesh.v(i)] == 0)
+      {
+        m_mesh.vm[m_mesh.v(i)] = 1;
+        int valence = getValence(i);
+        if ( valence == 2 )
+        {
+          m_valence2Corner = i;
+          print("Valence 2 corner " + i + "\n");
+        }
+        valenceBin[valence]++;
+      }      
+    }
+    
     for (int i = 0; i < m_mesh.nt; i++)
     {
       switch (m_mesh.tm[i])
@@ -78,6 +103,10 @@ class IslandCreator
       }
     }
     print("Stats num vertices " + m_mesh.nv + " num triangles " + m_mesh.nt + " islands " + numIsland + " channels " + numChannel + " others " + numOthers + " average valence " + averageValence + " max valence " + maxValence + "\n");
+    for (int i = 0; i < maxValence+1; i++)
+    {
+      print("Valence" + i + " " + valenceBin[i] + "\n");
+    }
   }
   
   private int retrySeed()
