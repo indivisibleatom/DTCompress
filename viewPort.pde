@@ -12,7 +12,7 @@ class Viewport
   pt T = P(); 
   pt E = P(0, 0, 1000); 
   vec U=V(0, 1, 0);  // focus  set with mouse when pressing 't', eye, and up vector
-  private pt Q=P(0, 0, 0); 
+  private pt Q=P(0, 0, 0);
   vec I=V(1, 0, 0); 
   vec J=V(0, 1, 0); 
   vec K=V(0, 0, 1); // picked surface point Q and screen aligned vectors {I,J,K} set when picked

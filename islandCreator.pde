@@ -73,11 +73,6 @@ class IslandCreator
       {
         m_mesh.vm[m_mesh.v(i)] = 1;
         int valence = getValence(i);
-        if ( valence == 2 )
-        {
-          m_valence2Corner = i;
-          print("Valence 2 corner " + i + "\n");
-        }
         valenceBin[valence]++;
       }      
     }
@@ -103,10 +98,10 @@ class IslandCreator
       }
     }
     print("Stats num vertices " + m_mesh.nv + " num triangles " + m_mesh.nt + " islands " + numIsland + " channels " + numChannel + " others " + numOthers + " average valence " + averageValence + " max valence " + maxValence + "\n");
-    for (int i = 0; i < maxValence+1; i++)
+    /*for (int i = 0; i < maxValence+1; i++)
     {
       print("Valence" + i + " " + valenceBin[i] + "\n");
-    }
+    }*/
   }
   
   private int retrySeed()
@@ -148,14 +143,20 @@ class IslandCreator
       {
         return false;
       }
-      
+           
       if ( ( m_mesh.t(m_mesh.o(m_mesh.n(currentCorner))) == m_mesh.t(m_mesh.o(m_mesh.p(currentCorner))) ) ||
            ( m_mesh.t(m_mesh.o(currentCorner)) == m_mesh.t(m_mesh.o(m_mesh.p(currentCorner))) ) ||
            ( m_mesh.t(m_mesh.o(currentCorner)) == m_mesh.t(m_mesh.o(m_mesh.n(currentCorner))) ) )
       {
         return false;
       }
-             
+      
+      //No ear collapse of channel to edge
+      int opposite = m_mesh.o(currentCorner);
+      if ( m_mesh.t(m_mesh.s(opposite)) == m_mesh.t(m_mesh.u(opposite)))
+      {
+        return false;
+      }
 
       if ( ( m_mesh.v(m_mesh.o(m_mesh.n(currentCorner))) == m_mesh.v(m_mesh.o(m_mesh.p(currentCorner))) ) ||
            ( m_mesh.v(m_mesh.o(currentCorner)) == m_mesh.v(m_mesh.o(m_mesh.p(currentCorner))) ) ||
@@ -195,13 +196,19 @@ class IslandCreator
     int currentCorner = corner;
     do
     {
-      int possibleCorner = m_mesh.o(m_mesh.s(m_mesh.s(m_mesh.s(currentCorner))));
-      if (validTriangle(possibleCorner))
+      int possibleCornerO = m_mesh.s(m_mesh.s(m_mesh.s(currentCorner)));
+      do
       {
-        possibles[numPossibles++] = possibleCorner;
-      }
+        int possibleCorner = m_mesh.o(possibleCornerO);
+        if (validTriangle(possibleCorner))
+        {
+          possibles[numPossibles++] = possibleCorner;
+          break;
+        }
+        possibleCornerO = m_mesh.s(possibleCornerO);
+      } while ( possibleCornerO != m_mesh.u(currentCorner) );
       currentCorner = m_mesh.n(currentCorner);
-    } while(currentCorner != corner);
+    } while(currentCorner != m_mesh.n(corner));
     return numPossibles;
   }
    
@@ -232,17 +239,20 @@ class IslandCreator
     return numberExpandable;
   }
   
-  private void internalCreateIslandsPass2()
+  private int internalCreateIslandsPass2()
   {
+    int numExpandable = 0;
     for (int i = 0; i < m_mesh.nt; i++)
     {
       if (validTriangle(i*3))
       {
         visitTriangle(m_mesh.c(i));
+        numExpandable++;
       }
       m_cornerFifo.add(m_seed);
       internalCreateIslandsPass1();
     }
+    return numExpandable;
   }
   
   //Offsets the corners in a mesh
@@ -278,43 +288,89 @@ class IslandCreator
       currentCorner = m_mesh.n(currentCorner);
     } while ( currentCorner != m_mesh.c(triangleIsland) );
   }
+  
+  private boolean hasChannel( int corner )
+  {
+    int currentCorner = m_mesh.s(m_mesh.s((corner)));
+    //count all except the current corner
+    while ( currentCorner != m_mesh.u(corner) )
+    {
+      if ( m_mesh.tm[m_mesh.t(currentCorner)] == CHANNEL )
+      {
+        return true;
+      }
+      currentCorner = m_mesh.s(currentCorner);
+    }
+    return false;
+  }
+  
+  private int countValenceOnCompact( int triangle )
+  {
+    int countExtraValence = 0;
+    int currentCorner = m_mesh.c(triangle);
+    do
+    {
+      if ( !hasChannel( currentCorner ) )
+      {
+        countExtraValence++;
+      }
+      currentCorner = m_mesh.n(currentCorner);
+    } while (currentCorner != m_mesh.c(triangle));
+    m_mesh.cm2[triangle] = countExtraValence;
+    return countExtraValence;
+  } 
+  
+  private int computeIslandCosts()
+  {
+    int count = 0;
+    for (int i = 0; i < m_mesh.nt; i++)
+    {
+      int valence = 0;
+      if ( m_mesh.tm[i] == ISLAND )
+      {
+        count += countValenceOnCompact(i);
+      }
+    }
+    return count;
+  }
    
   void createIslands()
   {
+    LOD++;
     m_mesh.resetMarkers();
-
+  
     int numTries = 0;
     int maxIslandSeed = 0;
-    int maxCreated = 0;
-    while (numTries < 1)
+    int bestCost = -2147438648;
+    for (int i = 0; i < LOD*100 ; i++)
     {
-      for (int i = 0; i < 100; i++)
+      m_mesh.resetMarkers();
+      m_seed = (int)random(m_mesh.nc);
+      m_cornerFifo.clear();
+      m_cornerFifo.add(m_seed);
+      int numCreated = internalCreateIslandsPass1();
+      numCreated += internalCreateIslandsPass2();
+      int cost = computeIslandCosts();
+      int totalCost = numCreated - 5*cost;
+      
+      if ( totalCost > bestCost )
       {
-        m_seed = retrySeed();
-        if ( validTriangle(m_seed) )
-        {
-          break;
-        }
-        else
-        {
-          m_seed = -1;
-        }
+        print("Cost " + totalCost + "\n");
+        maxIslandSeed = m_seed;
+        bestCost = totalCost;
       }
-      if ( m_seed != -1 )
-      {
-        m_cornerFifo.add(m_seed);
-        int numCreated = internalCreateIslandsPass1();
-        if ( numCreated > maxCreated )
-        {
-          numCreated = maxCreated;
-        }
-      }
-      numTries++;      
     }
     
-    print("Seed " + m_seed + "\n");
+    m_mesh.resetMarkers();
+    m_seed = maxIslandSeed;
+    m_cornerFifo.clear();
+    m_cornerFifo.add(m_seed);
+    int numCreated = internalCreateIslandsPass1();
+    numCreated += internalCreateIslandsPass2();
+    print("Seed " + maxIslandSeed + " Num created " + numCreated + "\n" );
     
     internalCreateIslandsPass2();
+    computeIslandCosts();
     
     if ( DEBUG && DEBUG_MODE >= LOW )
     {

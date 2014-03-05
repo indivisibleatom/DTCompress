@@ -39,7 +39,7 @@ class DrawingState
 class Mesh {
   //  ==================================== Internal variables ====================================
   // max sizes, counts, selected corners
-  int maxnv = 600000;                         //  max number of vertices
+  int maxnv = 550000;                         //  max number of vertices
   int maxnt = maxnv*2;                       // max number of triangles
   int nv = 0;                              // current  number of vertices
   int nt = 0;                   // current number of triangles
@@ -189,7 +189,7 @@ class Mesh {
     sc=0;
     for (int i=0; i<nv; i++) vm[i]=0;
     for (int i=0; i<nc; i++) cm[i]=0;
-    for (int i=0; i<nt; i++) tm[i]=0;
+    for (int i=0; i<nt; i++){ tm[i]=0; cm2[i] = 0;}
     for (int i=0; i<nt; i++) visible[i]=true;
   }
 
@@ -875,7 +875,26 @@ class Mesh {
         if (tm[t]==6) fill(blue, opacity); 
         if (tm[t]==7) fill(#FAAFBA, opacity); 
         if (tm[t]==8) fill(blue, opacity); 
-        if (tm[t]==9) fill(yellow, opacity); 
+        if (tm[t]==9)
+        {
+          if (cm2[t] == 0)
+          {
+            fill(yellow, opacity); 
+          }
+          else if (cm2[t] == 1)
+          {
+            fill(blue, opacity); 
+          }
+          else if (cm2[t] == 2)
+          {
+            fill(magenta, opacity);
+          }
+          else
+          {
+            fill(brown, opacity);
+          }
+        }
+        
         
         if (tm[t]==10) fill(cyan, opacity); 
         if (tm[t]==11) fill(brown, opacity); 
@@ -907,8 +926,6 @@ class Mesh {
   
   void initDisplayList()
   {
-    print("I am here!!!!");
-    m_displayList = gl.glGenLists(1);
     showTriangles(true, 255, m_drawingState.m_shrunk);
   }
 
@@ -924,8 +941,10 @@ class Mesh {
     {
       if (m_displayList == -1)
       {
-        print("Here");
+        m_displayList = gl.glGenLists(1);
+        gl.glNewList(m_displayList, gl.GL_COMPILE);
         initDisplayList();
+        gl.glEndList();
       }
       pgl.beginGL();
       gl.glCallList( m_displayList );

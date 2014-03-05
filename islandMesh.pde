@@ -254,7 +254,25 @@ class IslandMesh extends Mesh
         if (tm[t]==6) fill(blue, opacity); 
         if (tm[t]==7) fill(#FAAFBA, opacity); 
         if (tm[t]==8) fill(blue, opacity); 
-        if (tm[t]==9) fill(yellow, opacity); 
+        if (tm[t]==9)
+        {
+          if (cm2[t] == 0)
+          {
+            fill(yellow, opacity); 
+          }
+          else if (cm2[t] == 1)
+          {
+            fill(blue, opacity); 
+          }
+          else if (cm2[t] == 2)
+          {
+            fill(orange, opacity);
+          }
+          else
+          {
+            fill(green, opacity);
+          }
+        }
         
         if (tm[t]==10) fill(cyan, opacity); 
         if (tm[t]==11) fill(brown, opacity); 
