@@ -65,9 +65,9 @@ class Mesh {
 
   // auxiliary tables for bookkeeping
   int[] cm = new int[3*maxnt];               // corner markers: 
-  int[] vm = new int[3*maxnt];               // vertex markers: 0=not marked, 1=interior, 2=border, 3=non manifold
-  int[] tm = new int[3*maxnt];               // triangle markers: 0=not marked, 
-  int[] cm2 = new int[3*maxnt];               // triangle markers: 0=not marked, 
+  int[] vm = new int[maxnv];               // vertex markers: 0=not marked, 1=interior, 2=border, 3=non manifold
+  int[] tm = new int[maxnt];               // triangle markers: 0=not marked, 
+  int[] cm2 = new int[maxnt];               // triangle markers: 0=not marked, 
 
   // other tables
   int[] Mv = new int[maxnv];                  // vertex markers

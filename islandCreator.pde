@@ -1,19 +1,52 @@
 int LOD = 0; //TODO msati3: DebugHack
 int m_valence2Corner = -1;
 
+public LinkedHashMap sortHashMapByValuesD(HashMap passedMap) {
+   List mapKeys = new ArrayList(passedMap.keySet());
+   List mapValues = new ArrayList(passedMap.values());
+   Collections.sort(mapValues);
+   Collections.sort(mapKeys);
+
+   LinkedHashMap sortedMap = new LinkedHashMap();
+
+   Iterator valueIt = mapValues.iterator();
+   while (valueIt.hasNext()) {
+       Object val = valueIt.next();
+       Iterator keyIt = mapKeys.iterator();
+
+       while (keyIt.hasNext()) {
+           Object key = keyIt.next();
+           Integer comp1 = (Integer)passedMap.get(key);
+           Integer comp2 = (Integer)val;
+
+           if (comp1.equals(comp2)){
+               passedMap.remove(key);
+               mapKeys.remove(key);
+               sortedMap.put((Integer)key, (Integer)val);
+               break;
+           }
+
+       }
+
+   }
+   return sortedMap;
+}
+
 class IslandCreator
 {
   private IslandMesh m_mesh;
   private int m_seed; //Seed corner
   
   //Fifo of corners to visit
-  Queue<Integer> m_cornerFifo;
+  LinkedList<Integer> m_cornerFifo;
+  boolean[] m_trianglesVisited;
  
   IslandCreator(IslandMesh m, int seed)
   {
     m_mesh = m;
     m_seed = seed;
     m_cornerFifo = new LinkedList<Integer>();
+    m_trianglesVisited = new boolean[m_mesh.nt];
   }
   
   private int getValence(int corner)
@@ -27,7 +60,35 @@ class IslandCreator
     } while ( currentCorner != corner );
     return valence;
   }
+  
+  private int getIslandValence(int corner)
+  {
+    int currentCorner = corner;
+    int valence = 0;
+    do 
+    {
+      valence += getValence(currentCorner);
+      currentCorner = m_mesh.n(currentCorner);
+    } while ( currentCorner != corner );
+    return valence;
+  }
     
+  private int getValenceNonChannel(int corner)
+  {
+    //Skip the first corner, that will become a non-channel
+    int currentCorner = m_mesh.s(corner);
+    int valence = 0;
+    do 
+    {
+      if ( m_mesh.tm[ m_mesh.t( currentCorner ) ] != CHANNEL )
+      {
+        valence++;
+      }
+      currentCorner = m_mesh.s(currentCorner);
+    } while ( currentCorner != corner );
+    return valence;
+  }
+
   private void printStats()
   {
     int numIsland = 0;
@@ -56,7 +117,7 @@ class IslandCreator
         }
       }
     }
-    averageValence = totalValence / m_mesh.nv;
+    averageValence = (float)totalValence / m_mesh.nv;
     
     for (int i = 0; i < m_mesh.nv; i++)
     {
@@ -98,10 +159,10 @@ class IslandCreator
       }
     }
     print("Stats num vertices " + m_mesh.nv + " num triangles " + m_mesh.nt + " islands " + numIsland + " channels " + numChannel + " others " + numOthers + " average valence " + averageValence + " max valence " + maxValence + "\n");
-    /*for (int i = 0; i < maxValence+1; i++)
+    for (int i = 0; i < maxValence+1; i++)
     {
       print("Valence" + i + " " + valenceBin[i] + "\n");
-    }*/
+    }
   }
   
   private int retrySeed()
@@ -137,6 +198,7 @@ class IslandCreator
   private boolean validTriangle(int corner)
   {
     int currentCorner = corner;
+    int netValence = 0;
     do
     {
       if ( sameVertexIncidentNonChannel( corner ) )
@@ -168,6 +230,12 @@ class IslandCreator
       {
         return false;
       }
+      int nonChannel = getValenceNonChannel( m_mesh.n(m_mesh.u(currentCorner)) );
+      if ( nonChannel == 2 || nonChannel == 3 )
+      {
+        return false;
+      }
+      netValence += nonChannel;
       if ( ( m_mesh.tm[m_mesh.t(m_mesh.s(m_mesh.s(currentCorner)))] == CHANNEL ) ||
            ( m_mesh.tm[m_mesh.t(m_mesh.u(m_mesh.u(currentCorner)))] == CHANNEL ) )
       {
@@ -175,6 +243,10 @@ class IslandCreator
       }
       currentCorner = m_mesh.n(currentCorner);
     } while(currentCorner != corner);
+    if ( netValence >= 25 )
+    {
+      return false;
+    }
     return true;
   }
   
@@ -206,9 +278,9 @@ class IslandCreator
           break;
         }
         possibleCornerO = m_mesh.s(possibleCornerO);
-      } while ( possibleCornerO != m_mesh.u(currentCorner) );
+      } while (possibleCornerO != m_mesh.u(currentCorner) );
       currentCorner = m_mesh.n(currentCorner);
-    } while(currentCorner != m_mesh.n(corner));
+    } while(/*numPossibles == 0 &&*/ currentCorner != corner);
     return numPossibles;
   }
    
@@ -217,6 +289,52 @@ class IslandCreator
     for (int i = 0; i < numPossibles; i++)
     {
       m_cornerFifo.add(possibles[i]);
+    }
+  }
+  
+  private int internalCreateIslandsPass0()
+  {
+    HashMap<Integer, Integer> possibleAlternatives = new HashMap<Integer,Integer>();
+    int numExpandable = 0;
+    for (int i = 0; i < m_mesh.nt; i++)
+    {
+      int valence = getIslandValence(3*i);
+      if ( valence <= 20 && validTriangle(3*i))
+      {
+        possibleAlternatives.put(i, valence);
+        //visitTriangle(i);
+        //numExpandable++;
+        m_cornerFifo.add(i);
+      }
+    }
+    LinkedHashMap<Integer, Integer> sortedMap = sortHashMapByValuesD( possibleAlternatives );
+    Iterator<Integer> it = sortedMap.keySet().iterator();
+    while (it.hasNext())
+    {
+      int triangleNumber = it.next();
+      if ( validTriangle(3*triangleNumber) )
+      {
+        m_trianglesVisited[triangleNumber] = true;
+        visitTriangle(3*triangleNumber);
+        numExpandable++;
+      }
+    }
+
+    return numExpandable;
+  }
+  
+  private void resetMarkers()
+  {
+    for (int i = 0; i < m_mesh.nt; i++)
+    {
+      if ( !m_trianglesVisited[i] )
+      {
+        m_mesh.tm[i] = 0;
+        m_mesh.cm2[i] = 0;
+        m_mesh.vm[m_mesh.v(3*i)] = 0;
+        m_mesh.vm[m_mesh.v(3*i+1)] = 0;
+        m_mesh.vm[m_mesh.v(3*i+2)] = 0;
+      }
     }
   }
  
@@ -246,11 +364,12 @@ class IslandCreator
     {
       if (validTriangle(i*3))
       {
+        m_seed = i*3;
         visitTriangle(m_mesh.c(i));
         numExpandable++;
       }
       m_cornerFifo.add(m_seed);
-      internalCreateIslandsPass1();
+      numExpandable += internalCreateIslandsPass1();
     }
     return numExpandable;
   }
@@ -342,13 +461,22 @@ class IslandCreator
     int numTries = 0;
     int maxIslandSeed = 0;
     int bestCost = -2147438648;
+    int numCreatedInit = internalCreateIslandsPass0();
+    int startFifoSize = m_cornerFifo.size();
+    int numCreated = numCreatedInit;
     for (int i = 0; i < LOD*100 ; i++)
     {
-      m_mesh.resetMarkers();
+      int currentFifoSize =  m_cornerFifo.size();
+      for (int j = startFifoSize; j < currentFifoSize; j++)
+      {
+        m_cornerFifo.removeLast();
+      }
+
+      numCreated = numCreatedInit;
+      resetMarkers();
       m_seed = (int)random(m_mesh.nc);
-      m_cornerFifo.clear();
       m_cornerFifo.add(m_seed);
-      int numCreated = internalCreateIslandsPass1();
+      numCreated += internalCreateIslandsPass1();
       numCreated += internalCreateIslandsPass2();
       int cost = computeIslandCosts();
       int totalCost = numCreated - 5*cost;
@@ -362,14 +490,14 @@ class IslandCreator
     }
     
     m_mesh.resetMarkers();
-    m_seed = maxIslandSeed;
     m_cornerFifo.clear();
+    numCreated = internalCreateIslandsPass0();
+    m_seed = maxIslandSeed;
     m_cornerFifo.add(m_seed);
-    int numCreated = internalCreateIslandsPass1();
+    numCreated += internalCreateIslandsPass1();
     numCreated += internalCreateIslandsPass2();
     print("Seed " + maxIslandSeed + " Num created " + numCreated + "\n" );
     
-    internalCreateIslandsPass2();
     computeIslandCosts();
     
     if ( DEBUG && DEBUG_MODE >= LOW )
