@@ -258,19 +258,19 @@ class IslandMesh extends Mesh
         {
           if (cm2[t] == 0)
           {
-            fill(yellow, opacity); 
+            fill(green, opacity); 
           }
           else if (cm2[t] == 1)
           {
-            fill(blue, opacity); 
+            fill(yellow, opacity); 
           }
           else if (cm2[t] == 2)
           {
-            fill(orange, opacity);
+            fill(magenta, opacity);
           }
           else
           {
-            fill(green, opacity);
+            fill(blue, opacity);
           }
         }
         

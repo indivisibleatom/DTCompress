@@ -1,35 +1,34 @@
 int LOD = 0; //TODO msati3: DebugHack
 int m_valence2Corner = -1;
 
-public LinkedHashMap sortHashMapByValuesD(HashMap passedMap) {
-   List mapKeys = new ArrayList(passedMap.keySet());
-   List mapValues = new ArrayList(passedMap.values());
-   Collections.sort(mapValues);
-   Collections.sort(mapKeys);
+class PriorityData
+{
+  int index;
+  int priority;
+  
+  PriorityData(int in, int p)
+  {
+    index = in;
+    priority = p;
+  }
+}
 
-   LinkedHashMap sortedMap = new LinkedHashMap();
-
-   Iterator valueIt = mapValues.iterator();
-   while (valueIt.hasNext()) {
-       Object val = valueIt.next();
-       Iterator keyIt = mapKeys.iterator();
-
-       while (keyIt.hasNext()) {
-           Object key = keyIt.next();
-           Integer comp1 = (Integer)passedMap.get(key);
-           Integer comp2 = (Integer)val;
-
-           if (comp1.equals(comp2)){
-               passedMap.remove(key);
-               mapKeys.remove(key);
-               sortedMap.put((Integer)key, (Integer)val);
-               break;
-           }
-
-       }
-
-   }
-   return sortedMap;
+public class PriorityDataComparator implements Comparator<PriorityData>
+{
+    public int compare(PriorityData x, PriorityData y)
+    {
+        // Assume neither string is null. Real code should
+        // probably be more robust
+        if (x.priority < y.priority)
+        {
+            return -1;
+        }
+        if (x.priority > y.priority)
+        {
+            return 1;
+        }
+        return 0;
+    }
 }
 
 class IslandCreator
@@ -294,28 +293,26 @@ class IslandCreator
   
   private int internalCreateIslandsPass0()
   {
-    HashMap<Integer, Integer> possibleAlternatives = new HashMap<Integer,Integer>();
+    PriorityQueue<PriorityData> possibleAlternatives = new PriorityQueue<PriorityData>(10, new PriorityDataComparator());
     int numExpandable = 0;
     for (int i = 0; i < m_mesh.nt; i++)
     {
       int valence = getIslandValence(3*i);
       if ( valence <= 20 && validTriangle(3*i))
       {
-        possibleAlternatives.put(i, valence);
+        possibleAlternatives.add(new PriorityData(i, valence));
         //visitTriangle(i);
         //numExpandable++;
         m_cornerFifo.add(i);
       }
     }
-    LinkedHashMap<Integer, Integer> sortedMap = sortHashMapByValuesD( possibleAlternatives );
-    Iterator<Integer> it = sortedMap.keySet().iterator();
-    while (it.hasNext())
+    while (!possibleAlternatives.isEmpty())
     {
-      int triangleNumber = it.next();
-      if ( validTriangle(3*triangleNumber) )
+      PriorityData data = possibleAlternatives.remove();
+      if ( validTriangle(3*data.index) )
       {
-        m_trianglesVisited[triangleNumber] = true;
-        visitTriangle(3*triangleNumber);
+        m_trianglesVisited[data.index] = true;
+        visitTriangle(3*data.index);
         numExpandable++;
       }
     }
