@@ -143,68 +143,6 @@ class MeshUserInputHandler
   }
 }
 
-class BaseMeshUserInputHandler extends MeshUserInputHandler
-{
-  private BaseMesh m_mesh;
-  private int m_islandForExpansion;
-  
-  BaseMeshUserInputHandler( BaseMesh m )
-  {
-    super( m );
-    m_mesh = m;
-    m_islandForExpansion = -1;
-  }
-   
-  public void interactSelectedMesh()
-  {
-    if (keyPressed&&key==' ') { m_mesh.pickc(Pick()); m_mesh.onExpandIsland(); }// sets c to closest corner in M 
-    if (keyPressed&&key=='\'') { m_mesh.pickc(Pick()); m_mesh.onContractIsland(); }// sets c to closest corner in M 
-    if(pressed) {
-       if (keyPressed&&key=='m')
-       {
-         m_mesh.pickc(Pick()); // sets M.sc to the closest corner in M from the pick point
-         m_mesh.onExpandIsland();
-       }
-       if (keyPressed&&key=='n')
-       {
-         m_mesh.pickc(Pick()); // sets M.sc to the closest corner in M from the pick point
-         m_mesh.onContractIsland();
-       }
-    }
-    
-    //Debug
-    if (pressed) {
-    if (keyPressed&&key=='y')
-       { 
-         m_mesh.pickc(Pick()); // sets M.sc to the closest corner in M from the pick point
-         m_mesh.beforeStepWiseExpand();
-       }
-    }
-   
-    super.interactSelectedMesh();
-  }
-   
-  public void onKeyPress()
-  {
-    super.onKeyPress();
-    if(keyPressed&&key == 'G') {
-      m_mesh.onStepWiseExpand();
-    }
-    if(keyPressed&&key == 'C') {
-      m_mesh.onSwingBase();
-    }
-    if(keyPressed&&key == '@') {
-      m_mesh.onUnswingBase();
-    }
-    if(keyPressed&&key == '(') {
-     m_mesh.explodeExpand();
-    }
-    if(keyPressed&&key == ')') {
-      m_mesh.explodeExpandWithIsland();
-    }
-  }
-}
-
 class WorkingMeshUserInputHandler extends MeshUserInputHandler
 {
   WorkingMesh m_mesh;
@@ -249,11 +187,6 @@ class IslandMeshUserInputHandler extends MeshUserInputHandler
   public void interpretCommand( String command )
   {
     super.interpretCommand(command);
-    switch( command.charAt(0) )
-    {
-      case 'z': m_mesh.selectIsland(getNumberFromCommand(command, 1));
-        break;
-    }
   }
   
   public void onKeyPress()
@@ -278,57 +211,12 @@ class IslandMeshUserInputHandler extends MeshUserInputHandler
     }
     else
     {
-      /*if (key=='1') 
-      {
-        g_stepWiseRingExpander.setStepMode(false); 
-        m_mesh.showEdges = true; 
-        for (int i = 667; i < 3*m_mesh.nt; i++) 
-        {
-          R = new RingExpander(m_mesh, i);
-          m_mesh.setResult(R.completeRingExpanderRecursive()); 
-          m_mesh.showRingExpanderCorners();
-          g_stepWiseRingExpander.setStepMode(false); 
-          m_mesh.formIslands(-1);
-          m_mesh.colorTriangles();
-         //if (m_baseMesh != null)
-         //{
-         //  m_viewportManager.unregisterMeshFromViewport( m_baseMesh, 1 );
-         //}
-         BaseMesh baseMesh = m_mesh.populateBaseG(); 
-         m_mesh.numberVerticesOfIslandsAndCreateStream();
-         m_mesh.connectMesh(); 
-         baseMesh.computeCForV();
-         baseMesh.computeBox(); 
-       }
-       //m_viewportManager.registerMeshToViewport( m_baseMesh, 1 ); 
-      }
-      if (key=='1') {g_stepWiseRingExpander.setStepMode(false); m_mesh.getDrawingState().m_fShowEdges = true; R = new RingExpander(m_mesh, (int) random(m_mesh.nt * 3)); m_mesh.setResult(R.completeRingExpanderRecursive()); 
-                     m_mesh.showRingExpanderCorners(); m_mesh.m_fRingExpanderRun = true; m_mesh.m_fRingEdgesPopulated = false; 
-      }*/
       if (key=='1') 
       {
-        g_stepWiseRingExpander.setStepMode(false); m_mesh.getDrawingState().m_fShowEdges = true; 
+        m_mesh.getDrawingState().m_fShowEdges = true; 
         IslandCreator islandCreator = new IslandCreator(m_mesh, (int) random(m_mesh.nt * 3));
         islandCreator.createIslands();
       }
-      if (key=='2') {g_stepWiseRingExpander.setStepMode(false); m_mesh.formIslands(-1); m_mesh.m_coloringState = 1;}
-      if (key=='3') {m_mesh.colorTriangles(); m_mesh.m_coloringState = 2;}
-      if (key=='4') {m_mesh.m_coloringState = 3;}
-      if (key=='5') {m_mesh.m_coloringState = 4;}
-      if (key=='6') {m_mesh.m_coloringState = 5;}
-      //if (key=='4') {m_mesh.toggleMorphingState(); }
-      //if (key=='5') { m_mesh.printStats(); }
-      //if (key=='6') {EgdeBreakerCompress e = new EgdeBreakerCompress(m_mesh); e.initCompression();}
-      if (key=='7')
-      {
-        g_stepWiseRingExpander.setStepMode(false);
-        StatsCollector s = new StatsCollector(m_mesh); 
-        s.collectStats(10, 2);
-        //s.collectStats(10, 62);
-        s.done();
-      }  
-      //Debugging modes
-      /*if (key=='5') {g_stepWiseRingExpander.setStepMode(true); m_mesh.getDrawingState().m_fShowEdges = true; if (R == null) { R = new RingExpander(m_mesh, (int)random(m_mesh.nt * 3)); } R.ringExpanderStepRecursive();} //Press 4 to trigger step by step ring expander*/
     }
   }
 }

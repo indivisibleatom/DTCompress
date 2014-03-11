@@ -56,7 +56,6 @@ class Mesh {
   // primary tables
   int[] V = new int [3*maxnt];               // V table (triangle/vertex indices)
   int[] O = new int [3*maxnt];               // O table (opposite corner indices)
-  int[] CForV = new int [maxnv];                  // For querying for any corner for a vertex
   pt[] G = new pt [maxnv];                   // geometry table (vertices)
   pt[] baseG = new pt [maxnv];               // to store the locations of the vertices in their contracted form
 
@@ -272,7 +271,7 @@ class Mesh {
     return l(c) != n(c);
   } //true for meshes with borher if not returning next (has actual L)
 
-  int cForV(int v) { 
+  /*int cForV(int v) { 
     if (CForV[v] == -1) 
     {
       if ( DEBUG && DEBUG_MODE >= LOW )
@@ -281,7 +280,7 @@ class Mesh {
       }
     } 
     return CForV[v];
-  }
+  }*/
 
   // operations on the selected corner cc
   int t() {
@@ -600,19 +599,7 @@ class Mesh {
     };
   }// make i and j opposite if they match         
 
-  void computeCForV() {
-    for (int i = 0; i < nv; i++) { 
-      CForV[i] = -1;
-    }
-    for (int i = 0; i < nc; i++) { 
-      if (CForV[v(i)] == -1) { 
-        CForV[v(i)] = i;
-      }
-    }
-  }
-
   void computeO() {
-    computeCForV();
     int val[] = new int [nv]; 
     for (int v=0; v<nv; v++) val[v]=0;  
     for (int c=0; c<nc; c++) val[v(c)]++;   //  valences

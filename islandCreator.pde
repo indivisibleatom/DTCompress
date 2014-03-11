@@ -160,7 +160,28 @@ class IslandCreator
     print("Stats num vertices " + m_mesh.nv + " num triangles " + m_mesh.nt + " islands " + numIsland + " channels " + numChannel + " others " + numOthers + " average valence " + averageValence + " max valence " + maxValence + "\n");
     for (int i = 0; i < maxValence+1; i++)
     {
-      print("Valence" + i + " " + valenceBin[i] + "\n");
+      print("Valence" + i + " " + valenceBin[i] + " " + ((float)valenceBin[i]/m_mesh.nv) * 100 + "\n");
+    }
+    
+    
+    float[] probability = new float[50];
+    for (int i = 0; i < maxValence+1; i++)
+    {
+      for (int j = 0; j < maxValence+1; j++)
+      {
+        for (int k = 0; k < maxValence+1; k++)
+        {
+          if ( i+j+k-9 >= 0 )
+          {
+            probability[i+j+k-9] += (((float)valenceBin[i]/m_mesh.nv) * ((float)valenceBin[j]/m_mesh.nv) * ((float)valenceBin[k]/m_mesh.nv));
+          }
+        }
+      }
+    }
+    
+    for (int i = 0; i < 50; i++)
+    {
+      print("Probability " + i + " " + probability[i] + "\n");
     }
   }
   
@@ -298,9 +319,19 @@ class IslandCreator
     for (int i = 0; i < m_mesh.nt; i++)
     {
       int valence = getIslandValence(3*i);
-      if ( valence <= 20 && validTriangle(3*i))
+      if ( /*valence <= 20 &&*/ validTriangle(3*i))
       {
-        possibleAlternatives.add(new PriorityData(i, valence));
+        int valence1 = getValence(3*i);
+        int valence2 = getValence(3*i+1);
+        int valence3 = getValence(3*i+2);
+        
+        int cost = valence1 <= 4 ? -20 : valence1;
+        cost+= valence2 <= 4 ? -20 : valence2;
+        cost+= valence3 <= 4 ? -20 : valence;
+        if ( cost < 10 )
+        {
+          possibleAlternatives.add(new PriorityData(i, cost));
+        }
         //visitTriangle(i);
         //numExpandable++;
         m_cornerFifo.add(i);

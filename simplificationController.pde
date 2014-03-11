@@ -161,26 +161,6 @@ class SimplificationController
       c.constructMesh();
       changeIslandMesh(c.getMesh());
     }
-    else if (key=='i')
-    {
-      if (m_baseMesh != null)
-      {
-        m_viewportManager.unregisterMeshFromViewport( m_baseMesh, 1 );
-      }
-      m_islandMesh.onBeforeAdvanceOnIslandEdge();
-      m_baseMesh = m_islandMesh.populateBaseG(); 
-      m_islandMesh.numberVerticesOfIslandsAndCreateStream();
-      m_baseMesh.Cbox = m_islandMesh.Cbox;
-      m_baseMesh.rbox = m_islandMesh.rbox;
-      m_viewportManager.registerMeshToViewport( m_baseMesh, 1 );
-    }
-    else if (key=='I') //Connect base mesh step by step
-    {
-      if (m_baseMesh != null)
-      {
-        m_islandMesh.connectMeshStepByStep();
-      }
-    }
     else
     {
       viewportManager().onKeyPressed();

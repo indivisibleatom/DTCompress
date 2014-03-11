@@ -18,8 +18,7 @@ PGraphicsOpenGL pgl;
 // ****************************** GLOBAL VARIABLES FOR DISPLAY OPTIONS *********************************
 Boolean showMesh=true, labels=false, 
         showHelpText=false, showLeft=true, showRight=true, showBack=false, showMiddle=false, showBaffle=false; // display modes
-   
-RingExpander R;
+
 int nsteps=250;
 
 SimplificationController g_controller;
