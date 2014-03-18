@@ -129,7 +129,7 @@ class SuccLODMapper
 
   private void printVertexNumberings( int vertex, boolean useParent )
   {
-    /*if ( useParent )
+    if ( useParent )
     {
       for (int i = 0; i < m_parent.m_vertexNumberings.length; i++)
       {
@@ -148,12 +148,12 @@ class SuccLODMapper
           print(i + " ");
         }
       }
-    }*/
+    }
   }
   
   private void printTriangleNumberings( int triangle, boolean useParent )
   {
-    /*if ( useParent )
+    if ( useParent )
     {
       for (int i = 0; i < m_parent.m_triangleNumberings.length; i++)
       {
@@ -172,44 +172,49 @@ class SuccLODMapper
           print(i + " ");
         }
       }
-    }*/
+    }
   }
     
   void printVertexMapping(int corner, int meshNumber)
   {
     //Treating corner for the base mesh
-    print("Printing vertex mapping for corner " + corner + "\n");
-    if (meshNumber != 0)
+    if (meshNumber == 0)
     {
+      print("Printing vertex mapping for corner " + corner + "\n");
       int vertex = m_base.v(corner);
-      print("BaseToRefinedVMap " + corner + " " + vertex + " " + m_baseToRefinedVMap[vertex][0] + " " + m_baseToRefinedVMap[vertex][1] + " " + m_baseToRefinedVMap[vertex][2] + "\n");
-      print("BaseToRefinedTMap " + m_tBaseToRefinedTMap[m_base.t(corner)] + " " + m_vBaseToRefinedTMap[vertex][0] + " " + m_vBaseToRefinedTMap[vertex][1] + " " + m_vBaseToRefinedTMap[vertex][2] + " " +  m_vBaseToRefinedTMap[vertex][3] + "\n");
-    }
-    
-    //Treating corner for the refined mesh
-    if (meshNumber == 1)
-    {
+
       print("VertexNumbering for vertex ");
-      int vertex = m_base.v(corner);
-      printVertexNumberings( vertex, false );
+      vertex = m_base.v(corner);
+      printVertexNumberings( vertex, true );
       print("\n");
       
       print("TriangleNumbering for triangle ");
       int triangle = m_base.t(corner);
-      printTriangleNumberings( triangle, false );
+      printTriangleNumberings( triangle, true );
       print("\n");
     }
-    if (meshNumber == 0)
+    else if ( meshNumber != NUMLODS )
     {
+      print("Printing vertex mapping for corner " + corner + "\n");
+      int vertex = m_base.v(corner);
+
+      print("BaseToRefinedVMap " + corner + " " + vertex + " " + m_baseToRefinedVMap[vertex][0] + " " + m_baseToRefinedVMap[vertex][1] + " " + m_baseToRefinedVMap[vertex][2] + "\n");
+      print("BaseToRefinedTMap " + m_tBaseToRefinedTMap[m_base.t(corner)] + " " + m_vBaseToRefinedTMap[vertex][0] + " " + m_vBaseToRefinedTMap[vertex][1] + " " + m_vBaseToRefinedTMap[vertex][2] + " " +  m_vBaseToRefinedTMap[vertex][3] + "\n");
+
       print("VertexNumbering for vertex ");
-      int vertex = m_refined.v(corner);
-      printVertexNumberings( vertex, false );
+      printVertexNumberings( vertex, true );
       print("\n");
 
-      int triangle = m_refined.t(corner);
+      int triangle = m_base.t(corner);
       print("TriangleNumbering for triangle ");
-      printTriangleNumberings( triangle, false );
+      printTriangleNumberings( triangle, true );
       print("\n");    
+    }
+    else
+    {
+      int vertex = m_base.v(corner);
+      print("BaseToRefinedVMap " + corner + " " + vertex + " " + m_baseToRefinedVMap[vertex][0] + " " + m_baseToRefinedVMap[vertex][1] + " " + m_baseToRefinedVMap[vertex][2] + "\n");
+      print("BaseToRefinedTMap " + m_tBaseToRefinedTMap[m_base.t(corner)] + " " + m_vBaseToRefinedTMap[vertex][0] + " " + m_vBaseToRefinedTMap[vertex][1] + " " + m_vBaseToRefinedTMap[vertex][2] + " " +  m_vBaseToRefinedTMap[vertex][3] + "\n");
     }    
   }
 

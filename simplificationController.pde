@@ -1,4 +1,4 @@
-int c_numMeshes = 3;
+int c_numMeshes = 4;
 
 class SimplificationController
 {
@@ -14,16 +14,17 @@ class SimplificationController
   SimplificationController()
   {
     m_viewportManager = new ViewportManager();
-    m_viewportManager.addViewport( new Viewport( 0, 0, width/3, height ) );
-    m_viewportManager.addViewport( new Viewport( width/3, 0, width/3, height ) );
-    m_viewportManager.addViewport( new Viewport( 2*width/3, 0, width/3, height ) );
+    for ( int i = 0; i < c_numMeshes; i++ )
+    {
+      m_viewportManager.addViewport( new Viewport( (width/c_numMeshes)*i, 0, width/c_numMeshes, height ) );
+    }
 
     m_displayMeshes = new ArrayList<Mesh>();
     m_islandMesh = new IslandMesh(); 
     m_lodMapperManager = new SuccLODMapperManager();
     m_baseMesh = null;
     m_islandMesh.declareVectors();  
-    m_islandMesh.loadMeshVTS("data/new.vts");
+    m_islandMesh.loadMeshVTS("data/horse.vts");
     checkCorrect();
     m_islandMesh.updateON(); // computes O table and normals
     m_islandMesh.resetMarkers(); // resets vertex and tirangle markers
@@ -98,13 +99,15 @@ class SimplificationController
     //Debugging baseVToVMap
     if (keyPressed&&key=='h')
     {
-      print("Size " + m_displayMeshes.size() + "\n");
       int corner = m_displayMeshes.get(m_minMesh + m_viewportManager.getSelectedViewport()).cc;
-      print("Selected corner " + corner + "\n");
-      m_lodMapperManager.getLODMapperForBaseMeshNumber(m_minMesh + m_viewportManager.getSelectedViewport()).printVertexMapping(corner, m_minMesh + m_viewportManager.getSelectedViewport());
-      if ( m_workingMesh != null )
+      if ( m_workingMesh != null &&  m_viewportManager.getSelectedViewport() == c_numMeshes-1 )
       {
+        m_lodMapperManager.getLODMapperForBaseMeshNumber(m_minMesh + m_viewportManager.getSelectedViewport()).printVertexMapping(corner, m_minMesh + m_viewportManager.getSelectedViewport());
         m_workingMesh.printVerticesSelected();
+      }
+      else
+      {
+        m_lodMapperManager.getLODMapperForBaseMeshNumber(m_minMesh + m_viewportManager.getSelectedViewport()).printVertexMapping(corner, m_minMesh + m_viewportManager.getSelectedViewport());
       }
     }
     else if (key=='p')  //Create base mesh and register it to other viewport archival

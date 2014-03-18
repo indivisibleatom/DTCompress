@@ -418,7 +418,7 @@ class Mesh {
       cc=b; 
       pc=b;
     }
-    if ( origCC != cc && DEBUG && DEBUG_MODE >= LOW ) { 
+    if ( origCC != cc && DEBUG && DEBUG_MODE >= VERBOSE ) { 
       print("Corner picked :" + cc + " vertex :" + v(cc) );
     }
   } // picks closest corner to X
@@ -666,7 +666,7 @@ class Mesh {
       }
       else if (cm[i] == 2)
       {
-        fill(green);
+        fill(red);
         showCorner(i, 5);
       }
       else
@@ -1743,33 +1743,6 @@ class Mesh {
     traceRing(cc, ncp); // marks triangles on ring through control points
   }
 
-  //************************************************************************************************************** CUT ************************************************************
-  void cut(LOOP L) { // computes projected loop PL and constructs baffle
-    if (L.n<3) return;
-    //    LOOP XL = new LOOP(); 
-    //    XL.setToProjection(L,this); 
-    //    PL=XL.resampleDistance(100);                                           // loop sampling was 10
-    RL.setToProjection(L, this); 
-    PL=RL.resampleDistance(5);                                           // loop sampling was 10
-
-    //    for(int i=0; i<10; i++) {PL.projectOn(Cylinder); PL.projectOn(this);}
-
-    PL.smoothen(); 
-    PL.projectOn(this);
-    PL.smoothenOn(this); 
-    for (int t=0; t<nt; t++) {
-      tm[t]=0;
-    }; // reset triangle markings are not in ring
-    int[] cc = new int[PL.n]; // closest corners
-    for (int i=0; i<PL.n; i++) cc[i]=closestCorner(PL.Pof(i));
-    traceRing(cc, PL.n); // marks triangles on ring through control points
-    int s=0; // mark the corners facing the cut triangles
-    for (int c=0; c<nc; c++) if ( tm[t(c)]==0 && tm[t(o(c))]==1 && d(g(c), g(cc[0]))<d(g(s), g(cc[0]))) s=c;
-    tm[t(s)]=2;
-    invade(0, 2, s);
-    PL.smoothenOn(this, 1);
-  }
-
   void invade(int om, int nm, int s) { // grows region  tm[t]=nm by invading triangles where tm[t]==om
     Boolean found=true;
     while (found) {
@@ -1850,91 +1823,6 @@ class Mesh {
     for (int i=1; i<nc; i++) if (d(M, cg(i))<d(M, cg(c))) c=i; 
     return c;
   }
-
-  void drawLoopOfClosestVertices(LOOP L) {
-    resetMarkers(); 
-    noFill(); 
-    stroke(magenta); 
-    beginShape();
-    for (int p=0; p<L.n; p++) {
-      int v=closestVertexID(L.P[p]); 
-      vm[v]=p+1; 
-      vertex(G[v]);
-    };  
-    endShape();
-  }
-
-
-  void drawProjection(LOOP L) {
-    stroke(cyan); 
-    fill(cyan);
-    for (int p=0; p<L.n; p++) {
-      pt CP=closestProjection(L.P[p]); 
-      show(L.P[p], CP); 
-      show(CP, 1);
-    }
-  }
-
-  void makeLoopOfClosestVerticesAndMarkTriangles(LOOP L) {
-    resetMarkers();
-    for (int p=0; p<L.n; p++) {
-      closestProjectionMark(L.P[p]);
-    };
-  }
-
-  pt closestProjectionMark(pt P) {
-    float md=d(P, g(0));
-    int cc=0; // corner of closest cell
-    int type = 0; // type of closest projection: - = vertex, 1 = edge, 2 = triangle
-    pt Q = P(); // closest point
-    for (int c=0; c<nc; c++) if (d(P, g(c))<md) {
-      Q.set(g(c)); 
-      cc=c; 
-      type=0; 
-      md=d(P, g(c));
-    } 
-    for (int c=0; c<nc; c++) if (c<=o(c)) {
-      float d = distPE(P, g(n(c)), g(p(c))); 
-      if (d<md && projPonE(P, g(n(c)), g(p(c)))) {
-        md=d; 
-        cc=c; 
-        type=1; 
-        Q=CPonE(P, g(n(c)), g(p(c)));
-      }
-    } 
-    if (onTriangles) 
-      for (int t=0; t<nt; t++) {
-        int c=3*t; 
-        float d = distPtPlane(P, g(c), g(n(c)), g(p(c))); 
-        if (d<md && projPonT(P, g(c), g(n(c)), g(p(c)))) {
-          md=d; 
-          cc=c; 
-          type=2; 
-          Q=CPonT(P, g(c), g(n(c)), g(p(c)));
-        }
-      } 
-    if (type==2) tm[t(cc)]=1;
-    if (type==1) {
-      tm[t(cc)]=2; 
-      tm[t(o(cc))]=2;
-    }
-    if (type==0) {
-      tm[t(cc)]=3; 
-      int c=s(cc); 
-      while (c!=cc) {
-        c=s(c); 
-        tm[t(c)]=3;
-      }
-    }
-    return Q;
-  }
-
-  void drawClosestProjections(LOOP L) {
-    for (int p=0; p<L.n; p++) {
-      drawLineToClosestProjection(L.P[p]);
-    };
-  }
-
 
   void drawLineToClosestProjection(pt P) {
     float md=d(P, g(0));
