@@ -164,7 +164,7 @@ class IslandCreator
     }
     
     
-    float[] probability = new float[50];
+    /*float[] probability = new float[50];
     for (int i = 0; i < maxValence+1; i++)
     {
       for (int j = 0; j < maxValence+1; j++)
@@ -182,7 +182,7 @@ class IslandCreator
     for (int i = 0; i < 50; i++)
     {
       print("Probability " + i + " " + probability[i] + "\n");
-    }
+    }*/
   }
   
   private int retrySeed()
@@ -316,10 +316,10 @@ class IslandCreator
   {
     PriorityQueue<PriorityData> possibleAlternatives = new PriorityQueue<PriorityData>(10, new PriorityDataComparator());
     int numExpandable = 0;
-    for (int i = 0; i < m_mesh.nt; i++)
+    for (int i = 0; i < m_mesh.nt; i+=15)
     {
       int valence = getIslandValence(3*i);
-      if ( /*valence <= 20 &&*/ validTriangle(3*i))
+      if ( validTriangle(3*i))
       {
         int valence1 = getValence(3*i);
         int valence2 = getValence(3*i+1);
@@ -328,12 +328,10 @@ class IslandCreator
         int cost = valence1 <= 4 ? -20 : valence1;
         cost+= valence2 <= 4 ? -20 : valence2;
         cost+= valence3 <= 4 ? -20 : valence;
-        if ( cost < 10 )
+        if ( cost < 40 )
         {
           possibleAlternatives.add(new PriorityData(i, cost));
         }
-        //visitTriangle(i);
-        //numExpandable++;
         m_cornerFifo.add(i);
       }
     }
@@ -519,7 +517,8 @@ class IslandCreator
     
     m_mesh.resetMarkers();
     m_cornerFifo.clear();
-    numCreated = internalCreateIslandsPass0();
+    numCreated = 0;
+    //numCreated = internalCreateIslandsPass0();
     m_seed = maxIslandSeed;
     m_cornerFifo.add(m_seed);
     numCreated += internalCreateIslandsPass1();
