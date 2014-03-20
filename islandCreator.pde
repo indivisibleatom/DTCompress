@@ -221,15 +221,10 @@ class IslandCreator
     int netValence = 0;
     do
     {
+      //Should never happen
       if ( sameVertexIncidentNonChannel( corner ) )
       {
-        return false;
-      }
-           
-      if ( ( m_mesh.t(m_mesh.o(m_mesh.n(currentCorner))) == m_mesh.t(m_mesh.o(m_mesh.p(currentCorner))) ) ||
-           ( m_mesh.t(m_mesh.o(currentCorner)) == m_mesh.t(m_mesh.o(m_mesh.p(currentCorner))) ) ||
-           ( m_mesh.t(m_mesh.o(currentCorner)) == m_mesh.t(m_mesh.o(m_mesh.n(currentCorner))) ) )
-      {
+        print("validTriangle : This is occurring sameVertexIncidentNonChannel!!\n");
         return false;
       }
       
@@ -240,21 +235,34 @@ class IslandCreator
         return false;
       }
 
+      //Valence 3 vertex
       if ( ( m_mesh.v(m_mesh.o(m_mesh.n(currentCorner))) == m_mesh.v(m_mesh.o(m_mesh.p(currentCorner))) ) ||
            ( m_mesh.v(m_mesh.o(currentCorner)) == m_mesh.v(m_mesh.o(m_mesh.p(currentCorner))) ) ||
            ( m_mesh.v(m_mesh.o(currentCorner)) == m_mesh.v(m_mesh.o(m_mesh.n(currentCorner))) ) )
       {
         return false;
       }
+
+      //Valence 3 vertex
+      if ( ( m_mesh.t(m_mesh.o(m_mesh.n(currentCorner))) == m_mesh.t(m_mesh.o(m_mesh.p(currentCorner))) ) ||
+           ( m_mesh.t(m_mesh.o(currentCorner)) == m_mesh.t(m_mesh.o(m_mesh.p(currentCorner))) ) ||
+           ( m_mesh.t(m_mesh.o(currentCorner)) == m_mesh.t(m_mesh.o(m_mesh.n(currentCorner))) ) )
+      {
+        print("validTriangle : This is occurring valence3Vertex by triangle!!\n");
+        return false;
+      }
+
       if ( m_mesh.vm[m_mesh.v(currentCorner)] == 1 )
       {
         return false;
       }
+      
       int nonChannel = getValenceNonChannel( m_mesh.n(m_mesh.u(currentCorner)) );
       if ( nonChannel == 2 || nonChannel == 3 )
       {
         return false;
       }
+      
       netValence += nonChannel;
       if ( ( m_mesh.tm[m_mesh.t(m_mesh.s(m_mesh.s(currentCorner)))] == CHANNEL ) ||
            ( m_mesh.tm[m_mesh.t(m_mesh.u(m_mesh.u(currentCorner)))] == CHANNEL ) )
@@ -478,8 +486,20 @@ class IslandCreator
     }
     return count;
   }
+  
+  void createIslands( String strategy )
+  {
+    if ( strategy == "regionGrow" )
+    {
+      createIslandsRegionGrow();
+    }
+    else
+    {
+      createIslandsHeuristic();
+    }
+  }
    
-  void createIslands()
+  void createIslandsHeuristic()
   {
     LOD++;
     m_mesh.resetMarkers();
@@ -518,13 +538,75 @@ class IslandCreator
     m_mesh.resetMarkers();
     m_cornerFifo.clear();
     numCreated = 0;
-    //numCreated = internalCreateIslandsPass0();
+    numCreated = internalCreateIslandsPass0();
     m_seed = maxIslandSeed;
     m_cornerFifo.add(m_seed);
     numCreated += internalCreateIslandsPass1();
     numCreated += internalCreateIslandsPass2();
     print("Seed " + maxIslandSeed + " Num created " + numCreated + "\n" );
     
+    computeIslandCosts();
+    
+    if ( DEBUG && DEBUG_MODE >= LOW )
+    {
+      printStats();
+    }
+
+    for (int i = 0; i < m_mesh.nt; i++)
+    {
+      if ( m_mesh.tm[i] == ISLAND )
+      {
+        fixupChannelCorners( i );
+      }
+   }
+    
+   //Clear all vertex markers
+   for (int i = 0; i < m_mesh.nv; i++)
+   {
+     m_mesh.vm[i] = 0;
+   }
+   print("Done creating islands \n");
+  }
+ 
+  void createIslandsRegionGrow()
+  {
+    LOD++;
+    m_mesh.resetMarkers();
+  
+    int numTries = 0;
+    int maxIslandSeed = 0;
+    int bestCost = -2147438648;
+    int numCreated = 0;
+    for (int i = 0; i < LOD*100 ; i++)
+    {
+      m_cornerFifo.clear();
+      resetMarkers();
+      numCreated = 0;
+      m_seed = (int)random(m_mesh.nc);
+      m_cornerFifo.add(m_seed);
+      numCreated += internalCreateIslandsPass1();
+      numCreated += internalCreateIslandsPass2();
+
+      int cost = computeIslandCosts();
+      int totalCost = numCreated - 5*cost;
+
+      if ( totalCost > bestCost )
+      {
+        print("Cost " + totalCost + "\n");
+        maxIslandSeed = m_seed;
+        bestCost = totalCost;
+      }
+    }
+    
+    m_mesh.resetMarkers();
+    m_cornerFifo.clear();
+    numCreated = 0;
+    m_seed = maxIslandSeed;
+    m_cornerFifo.add(m_seed);
+    numCreated += internalCreateIslandsPass1();
+    numCreated += internalCreateIslandsPass2();
+    print("Seed " + maxIslandSeed + " Num created " + numCreated + "\n" );
+
     computeIslandCosts();
     
     if ( DEBUG && DEBUG_MODE >= LOW )

@@ -215,7 +215,7 @@ class IslandMeshUserInputHandler extends MeshUserInputHandler
       {
         m_mesh.getDrawingState().m_fShowEdges = true; 
         IslandCreator islandCreator = new IslandCreator(m_mesh, (int) random(m_mesh.nt * 3));
-        islandCreator.createIslands();
+        islandCreator.createIslands("heuristic");
       }
     }
   }
