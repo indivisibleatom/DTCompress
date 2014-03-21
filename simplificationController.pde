@@ -24,7 +24,7 @@ class SimplificationController
     m_lodMapperManager = new SuccLODMapperManager();
     m_baseMesh = null;
     m_islandMesh.declareVectors();  
-    m_islandMesh.loadMeshVTS("data/bigHorse.vts");
+    m_islandMesh.loadMeshVTS("data/horse.vts");
     checkCorrect();
     m_islandMesh.updateON(); // computes O table and normals
     m_islandMesh.resetMarkers(); // resets vertex and tirangle markers
@@ -108,6 +108,13 @@ class SimplificationController
       else
       {
         m_lodMapperManager.getLODMapperForBaseMeshNumber(m_minMesh + m_viewportManager.getSelectedViewport()).printVertexMapping(corner, m_minMesh + m_viewportManager.getSelectedViewport());
+      }
+    }
+    if (keyPressed&&key=='2')
+    {
+      if ( m_workingMesh != null )
+      {
+        m_workingMesh.expandMesh();
       }
     }
     else if (key=='p')  //Create base mesh and register it to other viewport archival

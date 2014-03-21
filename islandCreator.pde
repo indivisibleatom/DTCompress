@@ -224,7 +224,6 @@ class IslandCreator
       //Should never happen
       if ( sameVertexIncidentNonChannel( corner ) )
       {
-        print("validTriangle : This is occurring sameVertexIncidentNonChannel!!\n");
         return false;
       }
       
@@ -252,23 +251,27 @@ class IslandCreator
         return false;
       }
 
-      if ( m_mesh.vm[m_mesh.v(currentCorner)] == 1 )
-      {
-        return false;
-      }
-      
-      int nonChannel = getValenceNonChannel( m_mesh.n(m_mesh.u(currentCorner)) );
-      if ( nonChannel == 2 || nonChannel == 3 )
-      {
-        return false;
-      }
-      
-      netValence += nonChannel;
+      //Single triangle channels
       if ( ( m_mesh.tm[m_mesh.t(m_mesh.s(m_mesh.s(currentCorner)))] == CHANNEL ) ||
            ( m_mesh.tm[m_mesh.t(m_mesh.u(m_mesh.u(currentCorner)))] == CHANNEL ) )
       {
         return false;
       }
+
+      //Already visited vertex (non-disjoint)
+      if ( m_mesh.vm[m_mesh.v(currentCorner)] == 1 )
+      {
+        return false;
+      }
+      
+      //If cycle exists
+      int nonChannel = getValenceNonChannel( m_mesh.n(m_mesh.u(currentCorner)) );
+      if ( nonChannel == 2 || nonChannel == 3 )
+      {
+        return false;
+      }
+
+      netValence += nonChannel;
       currentCorner = m_mesh.n(currentCorner);
     } while(currentCorner != corner);
     if ( netValence >= 25 )
@@ -308,7 +311,7 @@ class IslandCreator
         possibleCornerO = m_mesh.s(possibleCornerO);
       } while (possibleCornerO != m_mesh.u(currentCorner) );
       currentCorner = m_mesh.n(currentCorner);
-    } while(/*numPossibles == 0 &&*/ currentCorner != corner);
+    } while(numPossibles == 0 && currentCorner != corner);
     return numPossibles;
   }
    
@@ -324,7 +327,7 @@ class IslandCreator
   {
     PriorityQueue<PriorityData> possibleAlternatives = new PriorityQueue<PriorityData>(10, new PriorityDataComparator());
     int numExpandable = 0;
-    for (int i = 0; i < m_mesh.nt; i+=15)
+    for (int i = 0; i < m_mesh.nt; i++)
     {
       int valence = getIslandValence(3*i);
       if ( validTriangle(3*i))
@@ -335,8 +338,8 @@ class IslandCreator
         
         int cost = valence1 <= 4 ? -20 : valence1;
         cost+= valence2 <= 4 ? -20 : valence2;
-        cost+= valence3 <= 4 ? -20 : valence;
-        if ( cost < 40 )
+        cost+= valence3 <= 4 ? -20 : valence3;
+        if ( cost < 15 )
         {
           possibleAlternatives.add(new PriorityData(i, cost));
         }
@@ -501,6 +504,7 @@ class IslandCreator
    
   void createIslandsHeuristic()
   {
+    print("Here\n");
     LOD++;
     m_mesh.resetMarkers();
   
@@ -540,8 +544,8 @@ class IslandCreator
     numCreated = 0;
     numCreated = internalCreateIslandsPass0();
     m_seed = maxIslandSeed;
-    m_cornerFifo.add(m_seed);
     numCreated += internalCreateIslandsPass1();
+    m_cornerFifo.add(m_seed);
     numCreated += internalCreateIslandsPass2();
     print("Seed " + maxIslandSeed + " Num created " + numCreated + "\n" );
     

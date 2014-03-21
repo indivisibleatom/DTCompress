@@ -307,6 +307,97 @@ class WorkingMesh extends Mesh
       }
     }
   }
+  
+  private int populateSplitBitsArray( boolean[] splitArray, int currentLODWave, int corner, int[] corners, int sizeCornersArray, int sizeSplitBitsArray )
+  {
+    int[] ct = getExpansionCornerNumbers(currentLODWave, corner);
+    for (int i = 0; i < 3; i++)
+    {
+      corners[sizeCornersArray+i] = ct[i];
+    }
+    int currentCorner = corner;
+    int count=0;
+    do
+    {
+      if (currentCorner == ct[0] || currentCorner == ct[1] || currentCorner == ct[2])
+      {
+        splitArray[sizeSplitBitsArray+count] = true;
+      }
+      else
+      {
+        splitArray[sizeSplitBitsArray+count] = false;
+      }
+      currentCorner = s(currentCorner);
+      count++;
+    } 
+    while (currentCorner != corner);
+    return count;
+  }
+  
+  void expandMesh()
+  {
+    print("Expanding mesh\n");
+    int currentLODWave = NUMLODS - 1;
+    boolean[] expandArray;
+    int[] cornerForVertex;
+    boolean[] splitBitsArray;
+    int numExpandable;
+    while (currentLODWave >= 0)
+    {
+      numExpandable = 0;
+      expandArray = new boolean[nv];
+      cornerForVertex = new int[nv];
+      splitBitsArray = new boolean[nc];
+ 
+      for (int i = 0; i < nc; i++)
+      {
+        int vertex = v(i);
+        int lod = m_LOD[vertex];
+        if ( lod == currentLODWave )
+        {
+          if ( !expandArray[vertex] )
+          {
+            int orderV = m_orderV[vertex];
+            //TODO msati3: Could use connectivity here as well
+            pt[] result = m_packetFetcher.fetchGeometry(currentLODWave, orderV);
+            if ( result[1] != null )
+            {
+              expandArray[vertex] = true;
+              numExpandable++;
+              cornerForVertex[vertex] = i;
+            }
+          }
+        }
+      }
+
+      int[] corners = new int[3*numExpandable];
+      int sizeSplitBitsArray = 0;
+      int sizeCornersArray = 0;
+      for (int i = 0; i < nv; i++)
+      {
+        if ( expandArray[i] )
+        {
+          sizeSplitBitsArray += populateSplitBitsArray(splitBitsArray, currentLODWave, cornerForVertex[i], corners, sizeCornersArray, sizeSplitBitsArray);
+          sizeCornersArray += 3;
+        }
+      }
+
+      int countExpanded = 0;
+      int numVertices = nv;
+      for (int i = 0; i < numVertices; i++)
+      {
+        if (expandArray[i])
+        {
+          int orderV = m_orderV[i];
+          pt[] result = m_packetFetcher.fetchGeometry(currentLODWave, orderV);
+          int[] ct = {corners[countExpanded], corners[countExpanded+1], corners[countExpanded+2]};
+          countExpanded+=3;
+          stitch( result, currentLODWave, orderV, ct );
+        }
+      }
+      currentLODWave--;
+    }
+  }
 
   void expand(int corner)
   {
@@ -321,8 +412,6 @@ class WorkingMesh extends Mesh
       }
       int orderV = m_orderV[vertex];
       pt[] result = m_packetFetcher.fetchGeometry(lod, orderV);
-      //if (corner != 7)
-      {
       if (result[1] != null && lod >= 0)
       {
         int[] ct = getExpansionCornerNumbers(lod, corner);
@@ -331,7 +420,6 @@ class WorkingMesh extends Mesh
           print("Stiching using corners " + ct[0] + " " + ct[1] + " " + ct[2] + "\n");
         }
         stitch( result, lod, orderV, ct );
-      }
       }
     }
   }
