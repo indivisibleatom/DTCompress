@@ -48,25 +48,13 @@ class IslandCreator
     m_trianglesVisited = new boolean[m_mesh.nt];
   }
   
-  private int getValence(int corner)
-  {
-    int currentCorner = corner;
-    int valence = 0;
-    do 
-    {
-      valence++;
-      currentCorner = m_mesh.s(currentCorner);
-    } while ( currentCorner != corner );
-    return valence;
-  }
-  
   private int getIslandValence(int corner)
   {
     int currentCorner = corner;
     int valence = 0;
     do 
     {
-      valence += getValence(currentCorner);
+      valence += m_mesh.getValence(currentCorner);
       currentCorner = m_mesh.n(currentCorner);
     } while ( currentCorner != corner );
     return valence;
@@ -108,7 +96,7 @@ class IslandCreator
       if (m_mesh.vm[m_mesh.v(i)] == 0)
       {
         m_mesh.vm[m_mesh.v(i)] = 1;
-        int valence = getValence(i);
+        int valence = m_mesh.getValence(i);
         totalValence += valence;
         if ( valence > maxValence )
         {
@@ -132,7 +120,7 @@ class IslandCreator
       if (m_mesh.vm[m_mesh.v(i)] == 0)
       {
         m_mesh.vm[m_mesh.v(i)] = 1;
-        int valence = getValence(i);
+        int valence = m_mesh.getValence(i);
         valenceBin[valence]++;
       }      
     }
@@ -332,9 +320,9 @@ class IslandCreator
       int valence = getIslandValence(3*i);
       if ( validTriangle(3*i))
       {
-        int valence1 = getValence(3*i);
-        int valence2 = getValence(3*i+1);
-        int valence3 = getValence(3*i+2);
+        int valence1 = m_mesh.getValence(3*i);
+        int valence2 = m_mesh.getValence(3*i+1);
+        int valence3 = m_mesh.getValence(3*i+2);
         
         int cost = valence1 <= 4 ? -20 : valence1;
         cost+= valence2 <= 4 ? -20 : valence2;
@@ -544,8 +532,8 @@ class IslandCreator
     numCreated = 0;
     numCreated = internalCreateIslandsPass0();
     m_seed = maxIslandSeed;
-    numCreated += internalCreateIslandsPass1();
     m_cornerFifo.add(m_seed);
+    numCreated += internalCreateIslandsPass1();
     numCreated += internalCreateIslandsPass2();
     print("Seed " + maxIslandSeed + " Num created " + numCreated + "\n" );
     

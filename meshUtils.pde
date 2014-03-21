@@ -75,7 +75,7 @@ class MeshUserInputHandler
     // mesh edits, smoothing, refinement
     if(key=='v') m_mesh.flip(); // clip edge opposite to M.cc
     if(key=='F') {m_mesh.smoothen(); m_mesh.normals();}
-    if(key=='Y') {m_mesh.refine(); m_mesh.makeAllVisible();}
+    if(key=='Y') {m_mesh.refine(); m_mesh.makeAllVisible(); g_totalVertices = m_mesh.nv;}
     if(key=='d') {m_mesh.clean();}
     if(key=='o') m_mesh.offset();
 
@@ -172,6 +172,37 @@ class WorkingMeshUserInputHandler extends MeshUserInputHandler
     super.onKeyPress();
   }
 }
+
+class WorkingMeshClienttUserInputHandler extends MeshUserInputHandler
+{
+  WorkingMeshClient m_mesh;
+  
+  WorkingMeshClienttUserInputHandler( WorkingMeshClient m )
+  {
+    super(m);
+    m_mesh = m;
+  }
+
+  public void interactSelectedMesh()
+  {
+    if (keyPressed&&key==' ')
+    {
+      m_mesh.pickc(Pick()); 
+      m_mesh.expand(m_mesh.cc); 
+    }// sets c to closest corner in M 
+    super.interactSelectedMesh();
+  }
+  
+  public void onKeyPress()
+  {
+    if(keyPressed&&key == 'G') 
+    {
+      m_mesh.expand(m_mesh.cc);
+    }
+    super.onKeyPress();
+  }
+}
+
 
 class IslandMeshUserInputHandler extends MeshUserInputHandler
 {

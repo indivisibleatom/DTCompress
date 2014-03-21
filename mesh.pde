@@ -39,7 +39,8 @@ class DrawingState
 class Mesh {
   //  ==================================== Internal variables ====================================
   // max sizes, counts, selected corners
-  int maxnv = 550000;                         //  max number of vertices
+  //5500
+  int maxnv = 100000;                         //  max number of vertices
   int maxnt = maxnv*2;                       // max number of triangles
   int nv = 0;                              // current  number of vertices
   int nt = 0;                   // current number of triangles
@@ -652,6 +653,19 @@ class Mesh {
         };
       };
   }
+  
+  public int getValence(int corner)
+  {
+    int currentCorner = corner;
+    int valence = 0;
+    do 
+    {
+      valence++;
+      currentCorner = s(currentCorner);
+    } while ( currentCorner != corner );
+    return valence;
+  }
+  
 
   // ============================================= DISPLAY CORNERS and LABELS =============================
   void showCorners()
@@ -1823,6 +1837,7 @@ class Mesh {
     for (int i=1; i<nc; i++) if (d(M, cg(i))<d(M, cg(c))) c=i; 
     return c;
   }
+
 
   void drawLineToClosestProjection(pt P) {
     float md=d(P, g(0));

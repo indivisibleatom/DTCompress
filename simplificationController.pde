@@ -1,4 +1,5 @@
 int c_numMeshes = 4;
+int g_totalVertices;
 
 class SimplificationController
 {
@@ -6,6 +7,7 @@ class SimplificationController
   private IslandMesh m_islandMesh;
   private Mesh m_baseMesh;
   private WorkingMesh m_workingMesh;
+  private WorkingMeshClient m_workingMeshClient;
   private SuccLODMapperManager m_lodMapperManager;
   private ArrayList<Mesh> m_displayMeshes;
   int m_minMesh;
@@ -25,6 +27,7 @@ class SimplificationController
     m_baseMesh = null;
     m_islandMesh.declareVectors();  
     m_islandMesh.loadMeshVTS("data/horse.vts");
+    g_totalVertices = m_islandMesh.nv;
     checkCorrect();
     m_islandMesh.updateON(); // computes O table and normals
     m_islandMesh.resetMarkers(); // resets vertex and tirangle markers
@@ -114,7 +117,7 @@ class SimplificationController
     {
       if ( m_workingMesh != null )
       {
-        m_workingMesh.expandMesh();
+        m_workingMeshClient.expandMesh();
       }
     }
     else if (key=='p')  //Create base mesh and register it to other viewport archival
@@ -129,10 +132,15 @@ class SimplificationController
       {
         m_lodMapperManager.propagateNumberings();
         m_workingMesh = new WorkingMesh( m_baseMesh, m_lodMapperManager );
+        m_workingMeshClient = new WorkingMeshClient( m_baseMesh, m_workingMesh );
         m_workingMesh.resetMarkers();
         m_workingMesh.markTriangleAges();
         m_workingMesh.markExpandableVerts();
         m_workingMesh.computeBox();
+        
+        m_workingMeshClient.resetMarkers();
+        m_workingMeshClient.computeBox();
+
         setWorkingMesh();
       }
     }
@@ -212,8 +220,8 @@ class SimplificationController
   private void setWorkingMesh()
   {
     m_viewportManager.unregisterMeshFromViewport( m_displayMeshes.get(m_maxMesh), m_maxMesh - m_minMesh );
-    m_displayMeshes.set( m_maxMesh, m_workingMesh );
-    m_viewportManager.registerMeshToViewport( m_workingMesh, m_maxMesh - m_minMesh );
+    m_displayMeshes.set( m_maxMesh, m_workingMeshClient );
+    m_viewportManager.registerMeshToViewport( m_workingMeshClient, m_maxMesh - m_minMesh );
   }
 
   private void changeIslandMesh(IslandMesh m)

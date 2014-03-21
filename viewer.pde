@@ -33,6 +33,7 @@ void setup() {
   size(1600, 1000, OPENGL); // size(500, 500, OPENGL);  
   setColors(); sphereDetail(3); 
   PFont font = loadFont("GillSans-24.vlw"); textFont(font, 20);  // font for writing labels on 
+  randomSeed( hour() + second() + millis() );
   
   glu= ((PGraphicsOpenGL) g).glu;  
   pgl = (PGraphicsOpenGL) g;

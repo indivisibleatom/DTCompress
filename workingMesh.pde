@@ -20,6 +20,9 @@ class WorkingMesh extends Mesh
 
   int[] m_orderT = new int[maxnt]; //The order of the triangle
   int[] m_ageT = new int[maxnt];
+  
+  ArrayList<Boolean> m_expandBits;
+  ArrayList<pt> m_expandVertices;
 
   int m_baseTriangles;
   int m_baseVerts;
@@ -34,6 +37,9 @@ class WorkingMesh extends Mesh
     nv = m.nv;
     nt = m.nt;
     nc = m.nc;
+    
+    m_expandBits = new ArrayList<Boolean>();
+    m_expandVertices = new ArrayList<pt>();
 
     m_baseVerts = nv;
     m_baseTriangles = nt;
@@ -334,6 +340,21 @@ class WorkingMesh extends Mesh
     return count;
   }
   
+  public void onExpansionRequest()
+  {
+    expandMesh();
+  }
+  
+  public Boolean[] getExpansionBits()
+  {
+    return m_expandBits.toArray(new Boolean[m_expandBits.size()]);
+  }
+  
+  public pt[] getExpansionVertices()
+  {
+    return m_expandVertices.toArray(new pt[m_expandVertices.size()]);
+  }
+  
   void expandMesh()
   {
     print("Expanding mesh\n");
@@ -341,7 +362,9 @@ class WorkingMesh extends Mesh
     boolean[] expandArray;
     int[] cornerForVertex;
     boolean[] splitBitsArray;
+    pt[] expandVertices;
     int numExpandable;
+    int totalBits = 0;
     while (currentLODWave >= 0)
     {
       numExpandable = 0;
@@ -375,11 +398,19 @@ class WorkingMesh extends Mesh
       int sizeCornersArray = 0;
       for (int i = 0; i < nv; i++)
       {
+        m_expandBits.add(expandArray[i]);
+        totalBits++;
         if ( expandArray[i] )
         {
           sizeSplitBitsArray += populateSplitBitsArray(splitBitsArray, currentLODWave, cornerForVertex[i], corners, sizeCornersArray, sizeSplitBitsArray);
+          totalBits += getValence(cornerForVertex[i]);
           sizeCornersArray += 3;
         }
+      }
+
+      for (int i = 0; i < sizeSplitBitsArray; i++)
+      {
+        m_expandBits.add( splitBitsArray[i] );
       }
 
       int countExpanded = 0;
@@ -390,13 +421,17 @@ class WorkingMesh extends Mesh
         {
           int orderV = m_orderV[i];
           pt[] result = m_packetFetcher.fetchGeometry(currentLODWave, orderV);
+          m_expandVertices.add(result[0]); m_expandVertices.add(result[1]); m_expandVertices.add(result[2]);
           int[] ct = {corners[countExpanded], corners[countExpanded+1], corners[countExpanded+2]};
           countExpanded+=3;
           stitch( result, currentLODWave, orderV, ct );
         }
       }
+      
       currentLODWave--;
+      print("Expanded one level \n");
     }
+    print("Total bits per vertex " + totalBits + " " + (float)totalBits/g_totalVertices + "\n");
   }
 
   void expand(int corner)
@@ -434,7 +469,7 @@ class WorkingMesh extends Mesh
     int offsetTriangles = m_baseTriangles;
     int nuLowerLOD = NUMLODS - currentLOD;
     int verticesAtLOD = m_baseVerts;
-
+    
     //Rehook the triangles incident on expanded vertices
     int currentCorner = s(ct[0]);
     int vertex = v2;
@@ -490,7 +525,7 @@ class WorkingMesh extends Mesh
     O[offsetCorner+7] = offsetCorner;
     O[offsetCorner+10] = offsetCorner+1;
     O[offsetCorner+4] = offsetCorner+2;
-    markExpandableVerts();
+    //markExpandableVerts();
     
     //Recolor expanded vertex
     //colorCorrect( offsetCorner );
