@@ -24,6 +24,34 @@ class WorkingMeshClient extends Mesh
     m_triangleColorMap[0] = green;
     m_triangleColorMap[1] = yellow;
     m_triangleColorMap[2] = red;
+    
+    for (int i = 0; i < m.nt; i++)
+    {
+      m_orderT[i] = i;
+    }
+  }
+  
+  private int findSmallestExpansionCorner( Boolean[] expansionBits, int startPosition, int corner )
+  {
+    int minTriangle = maxnt;
+    int currentCorner = corner;
+    int smallestCorner = corner;
+    int initCorner = corner;
+    int swingCount = 0;
+    do
+    {
+      int triangle = t(currentCorner);
+      int orderT = m_orderT[triangle];
+      print(orderT + " " );
+      if (orderT < minTriangle && expansionBits[startPosition+swingCount])
+      {
+        minTriangle = orderT;
+        smallestCorner = currentCorner;
+      }
+      swingCount++;
+      currentCorner = s(currentCorner);
+    } while (currentCorner != initCorner);
+    return smallestCorner;
   }
   
   private int[] getCornerNumbers( Boolean[] expansionBits, int startPosition, int startCorner )
@@ -31,16 +59,37 @@ class WorkingMeshClient extends Mesh
     int[] cn = new int[3];
     int swingCount = 0;
     int cornerAddedCount = 0;
-    int currentCorner = startCorner;
+    int currentCorner = findSmallestExpansionCorner(expansionBits, startPosition, startCorner);
+    int initCorner = currentCorner;
+    int swingCountInit = 0;
+    int swingCountTotal = getValence(startCorner);
+
+    currentCorner = startCorner;
     do
     {
-      if ( expansionBits[startPosition+swingCount] )
+      if ( currentCorner == initCorner )
+      {
+        break;
+      }
+      swingCountInit++;
+      currentCorner = s(currentCorner);
+    } while( currentCorner != startCorner );
+    
+    currentCorner = initCorner;
+    do
+    {
+      int swingCountCurrent = (swingCountInit+swingCount);
+      if (swingCountCurrent >= swingCountTotal)
+      {
+        swingCountCurrent -= swingCountTotal;
+      }
+      if ( expansionBits[startPosition+swingCountCurrent] )
       {
         cn[cornerAddedCount++] = currentCorner;
       }
       swingCount++;
       currentCorner = s(currentCorner);
-    } while( currentCorner != startCorner );
+    } while( currentCorner != initCorner );
     if ( DEBUG && DEBUG_MODE >= LOW )
     {
       if ( cornerAddedCount != 3 )
@@ -133,7 +182,7 @@ class WorkingMeshClient extends Mesh
       currentLODWave--;
       print("Debug " + numVertices + " " + offsetIntoSplitBits + " " + countExpandable + "\n");
       print("One level of expansion. New vertex count " + nv + ". New start position " + currentLODStartPositionBits + "\n");
-      break;
+      //break;
     }
   }
   

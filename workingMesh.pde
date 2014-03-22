@@ -133,10 +133,8 @@ class WorkingMesh extends Mesh
     }
     int []result = new int[3];
     int numResults = 0;
-    //int currentCorner = findSmallestExpansionCorner(lod, corner);
-    //int initCorner = currentCorner;
-    int currentCorner = corner;
-    int initCorner = corner;
+    int currentCorner = findSmallestExpansionCorner(lod, corner);
+    int initCorner = currentCorner;
     do
     {
       int triangle = t(currentCorner);
@@ -376,7 +374,7 @@ class WorkingMesh extends Mesh
     pt[] expandVertices;
     int numExpandable;
     int totalBits = 0;
-    while (currentLODWave >= NUMLODS-1)
+    while (currentLODWave >= 0)
     {
       numExpandable = 0;
       expandArray = new boolean[nv];

@@ -216,10 +216,10 @@ class SimplificationController
   private void setWorkingMesh()
   {
     m_viewportManager.unregisterMeshFromViewport( m_displayMeshes.get(m_maxMesh), m_maxMesh - m_minMesh );
-    //m_displayMeshes.set( m_maxMesh, m_workingMeshClient );
-    //m_viewportManager.registerMeshToViewport( m_workingMeshClient, m_maxMesh - m_minMesh );
-    m_displayMeshes.set( m_maxMesh, m_workingMesh );
-    m_viewportManager.registerMeshToViewport( m_workingMesh, m_maxMesh - m_minMesh );
+    m_displayMeshes.set( m_maxMesh, m_workingMeshClient );
+    m_viewportManager.registerMeshToViewport( m_workingMeshClient, m_maxMesh - m_minMesh );
+    //m_displayMeshes.set( m_maxMesh, m_workingMesh );
+    //m_viewportManager.registerMeshToViewport( m_workingMesh, m_maxMesh - m_minMesh );
   }
 
   private void changeIslandMesh(IslandMesh m)
