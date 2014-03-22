@@ -110,14 +110,10 @@ class SimplificationController
       }
       else
       {
-        m_lodMapperManager.getLODMapperForBaseMeshNumber(m_minMesh + m_viewportManager.getSelectedViewport()).printVertexMapping(corner, m_minMesh + m_viewportManager.getSelectedViewport());
-      }
-    }
-    if (keyPressed&&key=='2')
-    {
-      if ( m_workingMesh != null )
-      {
-        m_workingMeshClient.expandMesh();
+        if ( m_lodMapperManager.getLODMapperForBaseMeshNumber(m_minMesh + m_viewportManager.getSelectedViewport()) != null )
+        {
+          m_lodMapperManager.getLODMapperForBaseMeshNumber(m_minMesh + m_viewportManager.getSelectedViewport()).printVertexMapping(corner, m_minMesh + m_viewportManager.getSelectedViewport());
+        }
       }
     }
     else if (key=='p')  //Create base mesh and register it to other viewport archival
@@ -144,7 +140,7 @@ class SimplificationController
         setWorkingMesh();
       }
     }
-    else if (key=='l') {
+    else if (key=='}') {
       IslandMesh m = new IslandMesh();
       m.declareVectors();
       m.loadMeshOBJ(); // M.loadMesh(); 
@@ -220,8 +216,10 @@ class SimplificationController
   private void setWorkingMesh()
   {
     m_viewportManager.unregisterMeshFromViewport( m_displayMeshes.get(m_maxMesh), m_maxMesh - m_minMesh );
-    m_displayMeshes.set( m_maxMesh, m_workingMeshClient );
-    m_viewportManager.registerMeshToViewport( m_workingMeshClient, m_maxMesh - m_minMesh );
+    //m_displayMeshes.set( m_maxMesh, m_workingMeshClient );
+    //m_viewportManager.registerMeshToViewport( m_workingMeshClient, m_maxMesh - m_minMesh );
+    m_displayMeshes.set( m_maxMesh, m_workingMesh );
+    m_viewportManager.registerMeshToViewport( m_workingMesh, m_maxMesh - m_minMesh );
   }
 
   private void changeIslandMesh(IslandMesh m)

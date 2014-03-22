@@ -10,8 +10,6 @@ class WorkingMeshClient extends Mesh
   WorkingMeshClient(Mesh m, WorkingMesh w)
   {
     m.copyTo(this);
-    V = m.V;
-    O = m.O;
     nv = m.nv;
     nt = m.nt;
     nc = m.nc;
@@ -20,6 +18,8 @@ class WorkingMeshClient extends Mesh
     m_baseVerts = nv;
     m_baseTriangles = nt;
     
+    m_userInputHandler = new WorkingMeshClientUserInputHandler(this);
+
     m_triangleColorMap = new int[10];
     m_triangleColorMap[0] = green;
     m_triangleColorMap[1] = yellow;
@@ -45,7 +45,12 @@ class WorkingMeshClient extends Mesh
     {
       if ( cornerAddedCount != 3 )
       {
-        print("WorkingMeshClient::getCornerNumbers returns != 3 as expandable corner count for vertex " + v(startCorner) + "\n");
+        print("Start position is " + startPosition + "\n");
+        for (int i = 0; i < swingCount; i++)
+        {
+          print(expansionBits[startPosition+i] + " ");
+        }
+        print("WorkingMeshClient::getCornerNumbers returns != 3 as expandable corner count for vertex " + v(startCorner) + " " + cornerAddedCount + "\n");
       }
     }
     return cn;
@@ -62,13 +67,14 @@ class WorkingMeshClient extends Mesh
     int currentLODStartPositionVert = 0;
     int currentLODWave = NUMLODS-1;
     
-    print("Num vertices " + vertices.length);
+    print("Num vertices in expansion packet total " + vertices.length + "\n");
     while (currentLODStartPositionBits != expansionBits.length)
     {
       int countExpandable = 0;
       int [] cornerForVertex = new int[nv];
       for (int i = 0; i < nv; i++)
       {
+        cornerForVertex[i] = -1;
          if ( expansionBits[currentLODStartPositionBits+i] )
          {
            countExpandable++;
@@ -77,8 +83,11 @@ class WorkingMeshClient extends Mesh
       
       for (int i = 0; i < nc; i++)
       {
-        print("Vertex for corner " + i + " = " + v(i) + "\n");
-        cornerForVertex[v(i)] = i;
+        int vertex = v(i);
+        if ( cornerForVertex[vertex] == -1 )
+        {
+          cornerForVertex[vertex] = i;
+        }
       }
       
       int currentExpandableCount = 0;
@@ -88,7 +97,11 @@ class WorkingMeshClient extends Mesh
       {
         if ( expansionBits[currentLODStartPositionBits+i] )
         {
-          int[] cn = getCornerNumbers(expansionBits, currentLODStartPositionBits+countExpandable+offsetIntoSplitBits, cornerForVertex[i]);         
+          int[] cn = getCornerNumbers(expansionBits, currentLODStartPositionBits+nv+offsetIntoSplitBits, cornerForVertex[i]);
+          if ( currentLODWave == NUMLODS-2 && i == 290 )
+          {
+            print(offsetIntoSplitBits + " " + i + " " + cornerForVertex[i] + "\n");
+          }
           offsetIntoSplitBits += getValence(cornerForVertex[i]);
           for ( int j = 0; j < 3; j++ )
           {
@@ -115,9 +128,12 @@ class WorkingMeshClient extends Mesh
         }
       }
  
-      currentLODStartPositionBits += numVertices + numExpanded*3;
+      currentLODStartPositionBits += numVertices + offsetIntoSplitBits;
       currentLODStartPositionVert += numExpanded*3;
       currentLODWave--;
+      print("Debug " + numVertices + " " + offsetIntoSplitBits + " " + countExpandable + "\n");
+      print("One level of expansion. New vertex count " + nv + ". New start position " + currentLODStartPositionBits + "\n");
+      break;
     }
   }
   
@@ -127,6 +143,10 @@ class WorkingMeshClient extends Mesh
   
   void stitch( pt[] g, int currentLOD, int currentOrderV, int[] ct )
   {
+    if ( DEBUG && DEBUG_MODE >= LOW )
+    {
+        print("Stiching using corners " + ct[0] + " " + ct[1] + " " + ct[2] + "\n");
+    }
     int offsetCorner = 3*nt;
     int v1 = addVertex(g[0], currentLOD-1, 3*currentOrderV);
     int v2 = addVertex(g[1], currentLOD-1, 3*currentOrderV+1);

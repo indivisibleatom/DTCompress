@@ -419,7 +419,7 @@ class Mesh {
       cc=b; 
       pc=b;
     }
-    if ( origCC != cc && DEBUG && DEBUG_MODE >= VERBOSE ) { 
+    if ( origCC != cc && DEBUG && DEBUG_MODE >= LOW ) { 
       print("Corner picked :" + cc + " vertex :" + v(cc) );
     }
   } // picks closest corner to X
@@ -2009,7 +2009,7 @@ class Mesh {
   void setViewport(Viewport viewport) {
     if ( DEBUG && DEBUG_MODE >= LOW )
     {
-      print("Setting viewport for " + m_meshNumber + " to " + viewport );
+      print("Setting viewport for " + m_meshNumber + " to " + viewport + "\n" );
     }
     m_viewport = viewport;
   }

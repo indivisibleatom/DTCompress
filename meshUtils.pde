@@ -127,6 +127,16 @@ class MeshUserInputHandler
     {
       case 'c': m_mesh.cc = getNumberFromCommand(command, 1);
         break;
+      case 'v': int vertex = getNumberFromCommand(command, 1);
+                for (int i = 0; i < m_mesh.nc; i++)
+                {
+                  if ( m_mesh.v(i) ==  vertex )
+                  {
+                    m_mesh.cc = i;
+                    break;
+                  }
+                }
+        break;
     }
   }
   
@@ -137,7 +147,7 @@ class MeshUserInputHandler
     if(pressed) {
        if (keyPressed&&key=='s') m_mesh.picks(Pick()); // sets M.sc to the closest corner in M from the pick point
        if (keyPressed&&key=='c') m_mesh.pickc(Pick()); // sets M.cc to the closest corner in M from the pick point
-       if (keyPressed&&(key=='w'||key=='x'||key=='X')) m_mesh.pickcOfClosestVertex(Pick()); 
+       if (keyPressed&&(key=='x'||key=='X')) m_mesh.pickcOfClosestVertex(Pick()); 
     }
     pressed=false;
   }
@@ -165,19 +175,26 @@ class WorkingMeshUserInputHandler extends MeshUserInputHandler
   
   public void onKeyPress()
   {
-    if(keyPressed&&key == 'G') 
-    {
-      m_mesh.expand(m_mesh.cc);
-    }
     super.onKeyPress();
+    if ( !m_fKeyEntryMode )
+    {
+      if (keyPressed && key=='2')
+      {
+         m_mesh.expandMesh();
+      }
+      if(keyPressed&&key == 'G') 
+      {
+        m_mesh.expand(m_mesh.cc);
+      }
+    }
   }
 }
 
-class WorkingMeshClienttUserInputHandler extends MeshUserInputHandler
+class WorkingMeshClientUserInputHandler extends MeshUserInputHandler
 {
   WorkingMeshClient m_mesh;
   
-  WorkingMeshClienttUserInputHandler( WorkingMeshClient m )
+  WorkingMeshClientUserInputHandler( WorkingMeshClient m )
   {
     super(m);
     m_mesh = m;
@@ -185,21 +202,29 @@ class WorkingMeshClienttUserInputHandler extends MeshUserInputHandler
 
   public void interactSelectedMesh()
   {
+    super.interactSelectedMesh();
     if (keyPressed&&key==' ')
     {
       m_mesh.pickc(Pick()); 
       m_mesh.expand(m_mesh.cc); 
     }// sets c to closest corner in M 
-    super.interactSelectedMesh();
   }
   
   public void onKeyPress()
   {
-    if(keyPressed&&key == 'G') 
-    {
-      m_mesh.expand(m_mesh.cc);
-    }
     super.onKeyPress();
+
+    if ( !m_fKeyEntryMode )
+    {
+      if (keyPressed && key=='2')
+      {
+        m_mesh.expandMesh();
+      }
+      if(keyPressed&&key == 'G') 
+      {
+        m_mesh.expand(m_mesh.cc);
+      }
+    }
   }
 }
 
@@ -223,24 +248,7 @@ class IslandMeshUserInputHandler extends MeshUserInputHandler
   public void onKeyPress()
   {
     super.onKeyPress();
-    if (key==':')
-    {
-      m_fKeyEntryMode = true;
-      m_command = "";
-    }
-    else if (m_fKeyEntryMode)
-    {
-      if (key == ENTER || key == RETURN)
-      {
-        interpretCommand( m_command );
-        m_fKeyEntryMode = false;
-      }
-      else
-      {
-        m_command += key;
-      }
-    }
-    else
+    if (!m_fKeyEntryMode)
     {
       if (key=='1') 
       {
