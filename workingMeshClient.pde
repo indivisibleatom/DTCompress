@@ -29,6 +29,11 @@ class WorkingMeshClient extends Mesh
     {
       m_orderT[i] = i;
     }
+    
+    for (int i = 0; i < m.nv; i++)
+    {
+      m_orderV[i] = i;
+    }
   }
   
   private int findSmallestExpansionCorner( Boolean[] expansionBits, int startPosition, int corner )
@@ -42,7 +47,6 @@ class WorkingMeshClient extends Mesh
     {
       int triangle = t(currentCorner);
       int orderT = m_orderT[triangle];
-      print(orderT + " " );
       if (orderT < minTriangle && expansionBits[startPosition+swingCount])
       {
         minTriangle = orderT;
@@ -57,32 +61,28 @@ class WorkingMeshClient extends Mesh
   private int[] getCornerNumbers( Boolean[] expansionBits, int startPosition, int startCorner )
   {
     int[] cn = new int[3];
-    int swingCount = 0;
     int cornerAddedCount = 0;
-    int currentCorner = findSmallestExpansionCorner(expansionBits, startPosition, startCorner);
-    int initCorner = currentCorner;
-    int swingCountInit = 0;
+    int smallestEpansionCorner = findSmallestExpansionCorner(expansionBits, startPosition, startCorner);
+    int initCorner = smallestEpansionCorner;
+    int swingCountToSmallest = 0;
     int swingCountTotal = getValence(startCorner);
 
-    currentCorner = startCorner;
+    int currentCorner = startCorner;
     do
     {
       if ( currentCorner == initCorner )
       {
         break;
       }
-      swingCountInit++;
+      swingCountToSmallest++;
       currentCorner = s(currentCorner);
     } while( currentCorner != startCorner );
     
+    int swingCount = 0;
     currentCorner = initCorner;
     do
     {
-      int swingCountCurrent = (swingCountInit+swingCount);
-      if (swingCountCurrent >= swingCountTotal)
-      {
-        swingCountCurrent -= swingCountTotal;
-      }
+      int swingCountCurrent = (swingCountToSmallest+swingCount)%swingCountTotal;
       if ( expansionBits[startPosition+swingCountCurrent] )
       {
         cn[cornerAddedCount++] = currentCorner;
@@ -116,7 +116,10 @@ class WorkingMeshClient extends Mesh
     int currentLODStartPositionVert = 0;
     int currentLODWave = NUMLODS-1;
     
-    print("Num vertices in expansion packet total " + vertices.length + "\n");
+    if ( DEBUG && DEBUG_MODE >= VERBOSE )
+    {
+      print("Num vertices in expansion packet total " + vertices.length + "\n");
+    }
     while (currentLODStartPositionBits != expansionBits.length)
     {
       int countExpandable = 0;
@@ -180,9 +183,11 @@ class WorkingMeshClient extends Mesh
       currentLODStartPositionBits += numVertices + offsetIntoSplitBits;
       currentLODStartPositionVert += numExpanded*3;
       currentLODWave--;
-      print("Debug " + numVertices + " " + offsetIntoSplitBits + " " + countExpandable + "\n");
-      print("One level of expansion. New vertex count " + nv + ". New start position " + currentLODStartPositionBits + "\n");
-      //break;
+      if ( DEBUG && DEBUG_MODE >= VERBOSE )
+      {
+        print("Debug " + numVertices + " " + offsetIntoSplitBits + " " + countExpandable + "\n");
+        print("One level of expansion. New vertex count " + nv + ". New start position " + currentLODStartPositionBits + "\n");
+      }
     }
   }
   
@@ -192,10 +197,21 @@ class WorkingMeshClient extends Mesh
   
   void stitch( pt[] g, int currentLOD, int currentOrderV, int[] ct )
   {
+    if ( DEBUG && DEBUG_MODE >= VERBOSE )
+    {
+      print("Stiching using corners " + ct[0] + " " + ct[1] + " " + ct[2] + " " + currentOrderV + "\n");
+    }
     if ( DEBUG && DEBUG_MODE >= LOW )
     {
-        print("Stiching using corners " + ct[0] + " " + ct[1] + " " + ct[2] + "\n");
+      int orderT1 = m_orderT[t(ct[0])];
+      int orderT2 = m_orderT[t(ct[1])];
+      int orderT3 = m_orderT[t(ct[2])];
+      if (orderT1 >= orderT2 || orderT1 >= orderT3)
+      {
+        print("workingMeshClient::stitch - incorrect triangle orderings! " + orderT1 + " " + orderT2 + " " + orderT3 + "\n");
+      }
     }
+
     int offsetCorner = 3*nt;
     int v1 = addVertex(g[0], currentLOD-1, 3*currentOrderV);
     int v2 = addVertex(g[1], currentLOD-1, 3*currentOrderV+1);

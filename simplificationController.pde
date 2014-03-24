@@ -26,7 +26,7 @@ class SimplificationController
     m_lodMapperManager = new SuccLODMapperManager();
     m_baseMesh = null;
     m_islandMesh.declareVectors();  
-    m_islandMesh.loadMeshVTS("data/horse.vts");
+    m_islandMesh.loadMeshVTS("data/bigHorse.vts");
     g_totalVertices = m_islandMesh.nv;
     checkCorrect();
     m_islandMesh.updateON(); // computes O table and normals
