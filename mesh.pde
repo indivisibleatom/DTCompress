@@ -76,6 +76,7 @@ class Mesh {
   int[] Mt = new int[maxnt];                 // triangle markers for distance and other things   
   boolean [] VisitedT = new boolean [maxnt];  // triangle visited
   boolean[] visible = new boolean[maxnt];    // set if triangle visible
+  boolean[] m_selectedRegion;
 
   int[] W = new int [3*maxnt];               // mid-edge vertex indices for subdivision (associated with corner opposite to edge)
 
@@ -121,6 +122,7 @@ class Mesh {
   Mesh() 
   {
     m_userInputHandler = new MeshUserInputHandler(this);
+    m_selectedRegion = null;
   }
 
   void setMeshNumber( int meshNumber )
@@ -723,25 +725,42 @@ class Mesh {
   void showVertices() {
     noStroke(); 
     noSmooth(); 
-    for (int v=0; v<nv; v++) {
-      //if (vm[v]==0) fill(brown,150);
-      if (vm[v]==0) fill(green, 150);
-      if (vm[v]==1) fill(red, 150);
-      show(G[v], 5);  
-      if (vm[v]==2)
+    for (int v=0; v<nv; v++) 
+    {
+      if ( m_selectedRegion != null )
       {
-        fill(green, 150);
-        show(G[v], 5);
+        if ( m_selectedRegion[v] )
+        {
+          fill(red, 150);
+          show(G[v], 5);
+        }
+        else
+        {
+          fill(blue, 150);
+          show(G[v], 5);
+        }
       }
-      if (vm[v]==3)
+      else
       {
-        fill(blue, 150);
-        show(G[v], 5);
-      }
-      if (vm[v]==5)
-      {
-        fill(red, 150);
-        show(G[v], 5);
+        //if (vm[v]==0) fill(brown,150);
+        if (vm[v]==0) fill(green, 150);
+        if (vm[v]==1) fill(red, 150);
+        show(G[v], 5);  
+        if (vm[v]==2)
+        {
+          fill(green, 150);
+          show(G[v], 5);
+        }
+        if (vm[v]==3)
+        {
+          fill(blue, 150);
+          show(G[v], 5);
+        }
+        if (vm[v]==5)
+        {
+          fill(red, 150);
+          show(G[v], 5);
+        }
       }
     }
     noFill();
@@ -998,6 +1017,14 @@ class Mesh {
         showEdges();
       }
     }
+    /*if (cc != -1)
+    {
+      pt centerSphere = P(G[v(cc)]);
+      stroke(0,0,255,50);
+      translate( centerSphere.x, centerSphere.y, centerSphere.z );
+      sphere( 100 );
+      translate( -centerSphere.x, -centerSphere.y, -centerSphere.z );    
+    }*/
   }
 
   void drawPostPicking()
@@ -2012,6 +2039,11 @@ class Mesh {
       print("Setting viewport for " + m_meshNumber + " to " + viewport + "\n" );
     }
     m_viewport = viewport;
+  }
+  
+  void setRegion(boolean[] inRegion)
+  {
+    m_selectedRegion = inRegion;
   }
 
   void onKeyPressed() {

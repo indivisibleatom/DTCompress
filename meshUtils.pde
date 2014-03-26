@@ -186,6 +186,10 @@ class WorkingMeshUserInputHandler extends MeshUserInputHandler
       {
         m_mesh.expandRegion(m_mesh.cc);
       }
+      if (keyPressed&&key == '~')
+      {
+        m_mesh.selectRegion(m_mesh.cc);
+      }
     }
   }
 }

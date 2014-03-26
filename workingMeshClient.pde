@@ -107,7 +107,7 @@ class WorkingMeshClient extends Mesh
   
   void expandRegion(int corner)
   {
-    float r2 = 100;
+    float r2 = 10000;
     pt centerSphere = P(G[v(corner)]);
 
     m_workingMesh.expandRegion(corner);

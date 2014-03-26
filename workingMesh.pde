@@ -455,9 +455,53 @@ class WorkingMesh extends Mesh
     print("Total bits per vertex " + totalBits + " " + (float)totalBits/g_totalVertices + "\n");
   }
   
+  private void markAllSurrounding( boolean[] newInRegion, boolean[] inRegion, int corner )
+  {
+    int currentCorner = corner;
+    do
+    {
+      newInRegion[v(n(currentCorner))] = true;
+      currentCorner = s(currentCorner);
+    }while(currentCorner != corner);
+  }
+  
+  private void expandInRegion( boolean[] inRegion, int numRings )
+  {
+    boolean[] newInRegion = new boolean[nv];
+    for (int i = 0; i < numRings; i++)
+    {
+      for (int j = 0; j < nv; j++)
+      {
+        newInRegion[j] = inRegion[j];
+      }
+      for (int j = 0; j < nc; j++)
+      {
+        if (inRegion[v(j)])
+        {
+          markAllSurrounding(newInRegion, inRegion, j);
+        }
+      }
+      for (int j = 0; j < nv; j++)
+      {
+        inRegion[j] = newInRegion[j];
+      }
+    }
+  }
+  
+  void selectRegion(int corner)
+  {
+    float r2 = 10000;
+    pt centerSphere = P(G[v(corner)]);
+    boolean[] inRegion = new boolean[nv];
+
+    inRegion[v(corner)] = true;
+    expandInRegion( inRegion, 2 );
+    setRegion(inRegion);
+  }
+  
   void expandRegion(int corner)
   {
-    float r2 = 1000;
+    float r2 = 10000;
     pt centerSphere = P(G[v(corner)]);
 
     int currentLODWave = NUMLODS - 1;
@@ -467,23 +511,34 @@ class WorkingMesh extends Mesh
     pt[] expandVertices;
     int numExpandable;
     int totalBits = 0;
+    boolean[] inRegion;
     while (currentLODWave >= 0)
     {
       numExpandable = 0;
       expandArray = new boolean[nv];
       cornerForVertex = new int[nv];
       splitBitsArray = new boolean[nc];
+      inRegion = new boolean[nv];
       
       for (int i = 0; i < nv; i++)
       {
         cornerForVertex[i] = -1;
+        if ( d2(centerSphere, G[i]) <= r2 )
+        {
+          inRegion[i] = true;
+        }
       }
+      if ( currentLODWave > 0 )
+      {
+        expandInRegion( inRegion, currentLODWave );
+      }
+      setRegion(inRegion);
  
       int numValidExpandable = 0;
       for (int i = 0; i < nc; i++)
       {
         int vertex = v(i);
-        if ( d2( centerSphere, G[vertex] ) <= r2 )
+        if ( inRegion[vertex] )
         {
           if ( cornerForVertex[vertex] == -1 )
           {
@@ -514,7 +569,7 @@ class WorkingMesh extends Mesh
       int sizeCornersArray = 0;
       for (int i = 0; i < nv; i++)
       {
-        if ( d2( centerSphere, G[i] ) <= r2 )
+        if ( inRegion[i] )
         {
           m_expandBits.add(expandArray[i]);
           totalBits++;
@@ -536,7 +591,7 @@ class WorkingMesh extends Mesh
       int numVertices = nv;
       for (int i = 0; i < numVertices; i++)
       {
-        if ( expandArray[i] && d2( centerSphere, G[i] ) <= r2 )
+        if ( expandArray[i] && inRegion[i] )
         {
           int orderV = m_deathAge[i];
           pt[] result = m_packetFetcher.fetchGeometry(currentLODWave, orderV);
@@ -551,7 +606,15 @@ class WorkingMesh extends Mesh
       print("Debug " + numVertices + " " + sizeSplitBitsArray + "\n");
       print("Expanded one level. New number of vertices " + nv + "\n");
     }
-    print("Total bits per vertex " + totalBits + " " + (float)totalBits/g_totalVertices + "\n");
+    int countVerticesComplete = 0;
+    for (int i = 0; i < nv; i++)
+    {
+      if ( d2(centerSphere, G[i]) <= r2 )
+      {
+        countVerticesComplete++;
+      }
+    }
+    print("Total bits per vertex " + totalBits + " " + (float)totalBits/countVerticesComplete + "\n");
   }
 
   void expand(int corner)
