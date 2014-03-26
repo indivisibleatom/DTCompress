@@ -1,6 +1,6 @@
 int c_numMeshes = 4;
 int g_totalVertices;
-pt g_centerSphere = new pt(0,0,0);
+pt g_centerSphere = new pt(0, 0, 0);
 
 class SimplificationController
 {
@@ -27,7 +27,7 @@ class SimplificationController
     m_lodMapperManager = new SuccLODMapperManager();
     m_baseMesh = null;
     m_islandMesh.declareVectors();  
-    m_islandMesh.loadMeshVTS("data/horse.vts");
+    m_islandMesh.loadMeshVTS("data/bigHorse.vts");
     g_totalVertices = m_islandMesh.nv;
     checkCorrect();
     m_islandMesh.updateON(); // computes O table and normals
@@ -101,7 +101,7 @@ class SimplificationController
      m_viewportManager.registerMeshToViewport( m_baseMesh, 1 );
      }*/
     //Debugging baseVToVMap
-    if (keyPressed&&key=='8')
+    if (keyPressed&&key=='"')
     {
       int currentLOD = NUMLODS-1;
       while (currentLOD >= 0)
@@ -130,16 +130,16 @@ class SimplificationController
           m_workingMesh.markTriangleAges();
           m_workingMesh.markExpandableVerts();
           m_workingMesh.computeBox();
-          
+
           m_workingMeshClient.resetMarkers();
           m_workingMeshClient.computeBox();
-    
+
           setWorkingMesh();
         }
         currentLOD--;
       }
     }
-    
+
     if (keyPressed&&key=='h')
     {
       int corner = m_displayMeshes.get(m_minMesh + m_viewportManager.getSelectedViewport()).cc;
@@ -152,7 +152,7 @@ class SimplificationController
       {
         if ( m_lodMapperManager.getLODMapperForBaseMeshNumber(m_minMesh + m_viewportManager.getSelectedViewport()) != null )
         {
-          m_lodMapperManager.getLODMapperForBaseMeshNumber(m_minMesh + m_viewportManager.getSelectedViewport()).printVertexMapping(corner, m_minMesh + m_viewportManager.getSelectedViewport());
+          //m_lodMapperManager.getLODMapperForBaseMeshNumber(m_minMesh + m_viewportManager.getSelectedViewport()).printVertexMapping(corner, m_minMesh + m_viewportManager.getSelectedViewport());
         }
       }
     }
@@ -173,7 +173,7 @@ class SimplificationController
         m_workingMesh.markTriangleAges();
         m_workingMesh.markExpandableVerts();
         m_workingMesh.computeBox();
-        
+
         m_workingMeshClient.resetMarkers();
         m_workingMeshClient.computeBox();
 
@@ -232,19 +232,22 @@ class SimplificationController
 
     if ( m_maxMesh - m_minMesh >= c_numMeshes )
     {
-      for (int i = m_minMesh; i < m_maxMesh; i++)
-      {
-        print("Move mesh at index " + (i+1) + " to viewport " + (i - m_minMesh) + "\n");
-        m_viewportManager.unregisterMeshFromViewport( m_displayMeshes.get(i), i - m_minMesh );
-      }
-      for (int i = m_minMesh; i < m_maxMesh - 1; i++)
-      {
-        m_viewportManager.registerMeshToViewport( m_displayMeshes.get(i+1), i - m_minMesh );
-      }
-      print("Adding mesh at index " + (m_maxMesh) + " at viewport index " + (m_maxMesh - 1 - m_minMesh) + "\n");
+      /*for (int i = m_minMesh; i < m_maxMesh; i++)
+       {
+       print("Move mesh at index " + (i+1) + " to viewport " + (i - m_minMesh) + "\n");
+       m_viewportManager.unregisterMeshFromViewport( m_displayMeshes.get(i), i - m_minMesh );
+       }
+       for (int i = m_minMesh; i < m_maxMesh - 1; i++)
+       {
+       m_viewportManager.registerMeshToViewport( m_displayMeshes.get(i+1), i - m_minMesh );
+       }
+       print("Adding mesh at index " + (m_maxMesh) + " at viewport index " + (m_maxMesh - 1 - m_minMesh) + "\n");
+       m_viewportManager.registerMeshToViewport( m_displayMeshes.get(m_maxMesh), m_maxMesh - 1 - m_minMesh );
+       m_minMesh++;
+       m_viewportManager.selectViewport( 3 );*/
+      m_viewportManager.unregisterMeshFromViewport( m_displayMeshes.get(m_maxMesh - 1), m_maxMesh - 1 - m_minMesh );
       m_viewportManager.registerMeshToViewport( m_displayMeshes.get(m_maxMesh), m_maxMesh - 1 - m_minMesh );
       m_minMesh++;
-      m_viewportManager.selectViewport( 3 );
     }
     else
     {

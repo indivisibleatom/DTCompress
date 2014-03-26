@@ -38,7 +38,7 @@ class WorkingMeshClient extends Mesh
   
   private int findSmallestExpansionCorner( Boolean[] expansionBits, int startPosition, int corner )
   {
-    int minTriangle = maxnt;
+    int minTriangle = 332433240;
     int currentCorner = corner;
     int smallestCorner = corner;
     int initCorner = corner;
@@ -185,7 +185,7 @@ class WorkingMeshClient extends Mesh
             int[] ct = {corners[3*numExpanded], corners[3*numExpanded+1], corners[3*numExpanded+2]};
             numExpanded++;
             int orderV = m_orderV[i];
-            stitch( result, currentLODWave, orderV, ct );
+            stitch( i, result, currentLODWave, orderV, ct );
           }
         }
         else
@@ -272,7 +272,7 @@ class WorkingMeshClient extends Mesh
           int[] ct = {corners[3*numExpanded], corners[3*numExpanded+1], corners[3*numExpanded+2]};
           numExpanded++;
           int orderV = m_orderV[i];
-          stitch( result, currentLODWave, orderV, ct );
+          stitch( i, result, currentLODWave, orderV, ct );
         }
         else
         {
@@ -295,7 +295,7 @@ class WorkingMeshClient extends Mesh
   {
   }
   
-  void stitch( pt[] g, int currentLOD, int currentOrderV, int[] ct )
+  void stitch( int currentV, pt[] g, int currentLOD, int currentOrderV, int[] ct )
   {
     if ( DEBUG && DEBUG_MODE >= VERBOSE )
     {
@@ -315,7 +315,7 @@ class WorkingMeshClient extends Mesh
     int offsetCorner = 3*nt;
     int v1 = addVertex(g[0], currentLOD-1, 3*currentOrderV);
     int v2 = addVertex(g[1], currentLOD-1, 3*currentOrderV+1);
-    int v3 = addVertex(g[2], currentLOD-1, 3*currentOrderV+2);
+    int v3 = addVertex(g[2], currentV, currentLOD-1, 3*currentOrderV+2);
 
     int offsetTriangles = m_baseTriangles;
     int nuLowerLOD = NUMLODS - currentLOD;
@@ -381,6 +381,13 @@ class WorkingMeshClient extends Mesh
   int addVertex(pt p, int lod, int orderV)
   {
     int vertexIndex = addVertex(p);
+    m_orderV[vertexIndex] = orderV;
+    return vertexIndex;
+  }
+  
+  int addVertex(pt p, int index, int lod, int orderV)
+  {
+    int vertexIndex = index;
     m_orderV[vertexIndex] = orderV;
     return vertexIndex;
   }

@@ -93,7 +93,7 @@ class WorkingMesh extends Mesh
     {
       print("Find smallest expansion corner for corner " + corner + "LOD and LOD swing " + lod + " " + m_LOD[v(n(s(corner)))] + "\n");
     }
-    int minTriangle = maxnt;
+    int minTriangle = 332433240;
     int currentCorner = corner;
     int smallestCorner = corner;
     int initCorner = corner;
@@ -187,6 +187,16 @@ class WorkingMesh extends Mesh
   int addVertex(pt p, int lod, int orderV)
   {
     int vertexIndex = addVertex(p);
+    FutureLODAndVOrder future = getLODAndVAge( lod, orderV );
+    m_LOD[vertexIndex] = future.lod();
+    m_deathAge[vertexIndex] = future.orderV();
+    return vertexIndex;
+  }
+
+  int addVertex(pt p, int index, int lod, int orderV)
+  {
+    int vertexIndex = index;
+    G[index] = p;
     FutureLODAndVOrder future = getLODAndVAge( lod, orderV );
     m_LOD[vertexIndex] = future.lod();
     m_deathAge[vertexIndex] = future.orderV();
@@ -346,7 +356,7 @@ class WorkingMesh extends Mesh
     {
       if ( numSplitEdges != 3 )
       {
-        print("workingMesh::populateSplitBitsArray - number of splitBits is not 3!\n");
+        print("workingMesh::populateSplitBitsArray - number of splitBits is not 3! " + currentLODWave + " " + v(corner) + "\n");
       }
     }
     return count;
@@ -444,7 +454,7 @@ class WorkingMesh extends Mesh
           m_expandVertices.add(P(result[0])); m_expandVertices.add(P(result[1])); m_expandVertices.add(P(result[2]));
           int[] ct = {corners[countExpanded], corners[countExpanded+1], corners[countExpanded+2]};
           countExpanded+=3;
-          stitch( result, currentLODWave, orderV, ct );
+          stitch( i, result, currentLODWave, orderV, ct );
         }
       }
       
@@ -601,7 +611,7 @@ class WorkingMesh extends Mesh
           m_expandVertices.add(P(result[0])); m_expandVertices.add(P(result[1])); m_expandVertices.add(P(result[2]));
           int[] ct = {corners[countExpanded], corners[countExpanded+1], corners[countExpanded+2]};
           countExpanded+=3;
-          stitch( result, currentLODWave, orderV, ct );
+          stitch( i, result, currentLODWave, orderV, ct );
         }
       }
       
@@ -637,16 +647,16 @@ class WorkingMesh extends Mesh
       if (result[1] != null && lod >= 0)
       {
         int[] ct = getExpansionCornerNumbers(lod, corner);
-        stitch( result, lod, orderV, ct );
+        stitch( v(corner), result, lod, orderV, ct );
       }
     }
   }
 
-  void stitch( pt[] g, int currentLOD, int currentOrderV, int[] ct )
+  void stitch( int currentV, pt[] g, int currentLOD, int currentOrderV, int[] ct )
   {
     if ( DEBUG && DEBUG_MODE >= VERBOSE )
     {
-      print("Stiching using corners " + ct[0] + " " + ct[1] + " " + ct[2] + "\n");
+      print("Stiching using corners " + ct[0] + " " + ct[1] + " " + ct[2] + " vertex " + currentV + "\n");
     }
     if ( DEBUG && DEBUG_MODE >= LOW )
     {
@@ -655,14 +665,14 @@ class WorkingMesh extends Mesh
       int orderT3 = m_orderT[t(ct[2])];
       if (orderT1 >= orderT2 || orderT1 >= orderT3)
       {
-        print("workingMeshServer::stitch incorrect orderings !!!!\n");
+        print("workingMeshServer::stitch incorrect orderings !!!!\n" + currentOrderV + " " + currentV + " " + orderT1 + " " + orderT2 + " " + orderT3 + "\n");
       }
     }
 
     int offsetCorner = 3*nt;
     int v1 = addVertex(g[0], currentLOD-1, 3*currentOrderV);
     int v2 = addVertex(g[1], currentLOD-1, 3*currentOrderV+1);
-    int v3 = addVertex(g[2], currentLOD-1, 3*currentOrderV+2);
+    int v3 = addVertex(g[2], currentV, currentLOD-1, 3*currentOrderV+2);
 
     int offsetTriangles = m_baseTriangles;
     int nuLowerLOD = NUMLODS - currentLOD;
