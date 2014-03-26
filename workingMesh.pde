@@ -503,6 +503,7 @@ class WorkingMesh extends Mesh
   {
     float r2 = 10000;
     pt centerSphere = P(G[v(corner)]);
+    g_centerSphere = centerSphere;
 
     int currentLODWave = NUMLODS - 1;
     boolean[] expandArray;
@@ -614,7 +615,8 @@ class WorkingMesh extends Mesh
         countVerticesComplete++;
       }
     }
-    print("Total bits per vertex " + totalBits + " " + (float)totalBits/countVerticesComplete + "\n");
+    print("Total number of fully vertices added " + m_expandVertices.size() + "\n");
+    print("Total bits per fully expanded vertices " + totalBits + " " + countVerticesComplete + " " + (float)totalBits/countVerticesComplete + "\n");
   }
 
   void expand(int corner)

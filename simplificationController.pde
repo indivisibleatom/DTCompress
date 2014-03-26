@@ -1,5 +1,6 @@
 int c_numMeshes = 4;
 int g_totalVertices;
+pt g_centerSphere = new pt(0,0,0);
 
 class SimplificationController
 {
@@ -100,6 +101,45 @@ class SimplificationController
      m_viewportManager.registerMeshToViewport( m_baseMesh, 1 );
      }*/
     //Debugging baseVToVMap
+    if (keyPressed&&key=='8')
+    {
+      int currentLOD = NUMLODS-1;
+      while (currentLOD >= 0)
+      {
+        IslandCreator islandCreator = new IslandCreator(m_islandMesh, (int) random(m_islandMesh.nt * 3));
+        islandCreator.createIslands("heuristic");
+        MeshSimplifierEdgeCollapse simplifier = new MeshSimplifierEdgeCollapse( m_islandMesh, m_lodMapperManager );
+        m_baseMesh = simplifier.simplify(); 
+        m_baseMesh.computeBox(); 
+        onMeshAdded(m_baseMesh);
+        if ( currentLOD != 0 )
+        {
+          IslandMesh m = new IslandMesh(m_baseMesh);
+          m.resetMarkers();
+          m.computeBox();
+          for (int i=0; i<20; i++) vis[i]=true;
+          changeIslandMesh(m);
+          m_baseMesh = null;
+        }
+        else
+        {
+          m_lodMapperManager.propagateNumberings();
+          m_workingMesh = new WorkingMesh( m_baseMesh, m_lodMapperManager );
+          m_workingMeshClient = new WorkingMeshClient( m_baseMesh, m_workingMesh );
+          m_workingMesh.resetMarkers();
+          m_workingMesh.markTriangleAges();
+          m_workingMesh.markExpandableVerts();
+          m_workingMesh.computeBox();
+          
+          m_workingMeshClient.resetMarkers();
+          m_workingMeshClient.computeBox();
+    
+          setWorkingMesh();
+        }
+        currentLOD--;
+      }
+    }
+    
     if (keyPressed&&key=='h')
     {
       int corner = m_displayMeshes.get(m_minMesh + m_viewportManager.getSelectedViewport()).cc;
@@ -204,12 +244,13 @@ class SimplificationController
       print("Adding mesh at index " + (m_maxMesh) + " at viewport index " + (m_maxMesh - 1 - m_minMesh) + "\n");
       m_viewportManager.registerMeshToViewport( m_displayMeshes.get(m_maxMesh), m_maxMesh - 1 - m_minMesh );
       m_minMesh++;
-      m_viewportManager.selectViewport( 1 );
+      m_viewportManager.selectViewport( 3 );
     }
     else
     {
       m_viewportManager.registerMeshToViewport( m_displayMeshes.get(m_maxMesh), m_maxMesh );
       print("Added mesh at viewport index " + (m_maxMesh) + " Min mesh index at start of viewport " + (m_minMesh) + " Mesh list size " + m_displayMeshes.size() + "\n");
+      m_viewportManager.selectViewport( m_maxMesh );
     }
   }
 

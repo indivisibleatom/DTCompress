@@ -1017,14 +1017,14 @@ class Mesh {
         showEdges();
       }
     }
-    /*if (cc != -1)
+    if (cc != -1)
     {
-      pt centerSphere = P(G[v(cc)]);
+      pt centerSphere = g_centerSphere;
       stroke(0,0,255,50);
       translate( centerSphere.x, centerSphere.y, centerSphere.z );
       sphere( 100 );
       translate( -centerSphere.x, -centerSphere.y, -centerSphere.z );    
-    }*/
+    }
   }
 
   void drawPostPicking()
