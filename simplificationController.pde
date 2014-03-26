@@ -145,7 +145,7 @@ class SimplificationController
       int corner = m_displayMeshes.get(m_minMesh + m_viewportManager.getSelectedViewport()).cc;
       if ( m_workingMesh != null &&  m_viewportManager.getSelectedViewport() == c_numMeshes-1 )
       {
-        m_lodMapperManager.getLODMapperForBaseMeshNumber(m_minMesh + m_viewportManager.getSelectedViewport()).printVertexMapping(corner, m_minMesh + m_viewportManager.getSelectedViewport());
+        //m_lodMapperManager.getLODMapperForBaseMeshNumber(m_minMesh + m_viewportManager.getSelectedViewport()).printVertexMapping(corner, m_minMesh + m_viewportManager.getSelectedViewport());
         m_workingMesh.printVerticesSelected();
       }
       else

@@ -513,6 +513,8 @@ class WorkingMesh extends Mesh
     int numExpandable;
     int totalBits = 0;
     boolean[] inRegion;
+    m_expandVertices.clear();
+    m_expandBits.clear();
     while (currentLODWave >= 0)
     {
       numExpandable = 0;
