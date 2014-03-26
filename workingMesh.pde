@@ -454,6 +454,105 @@ class WorkingMesh extends Mesh
     }
     print("Total bits per vertex " + totalBits + " " + (float)totalBits/g_totalVertices + "\n");
   }
+  
+  void expandRegion(int corner)
+  {
+    float r2 = 1000;
+    pt centerSphere = P(G[v(corner)]);
+
+    int currentLODWave = NUMLODS - 1;
+    boolean[] expandArray;
+    int[] cornerForVertex;
+    boolean[] splitBitsArray;
+    pt[] expandVertices;
+    int numExpandable;
+    int totalBits = 0;
+    while (currentLODWave >= 0)
+    {
+      numExpandable = 0;
+      expandArray = new boolean[nv];
+      cornerForVertex = new int[nv];
+      splitBitsArray = new boolean[nc];
+      
+      for (int i = 0; i < nv; i++)
+      {
+        cornerForVertex[i] = -1;
+      }
+ 
+      int numValidExpandable = 0;
+      for (int i = 0; i < nc; i++)
+      {
+        int vertex = v(i);
+        if ( d2( centerSphere, G[vertex] ) <= r2 )
+        {
+          if ( cornerForVertex[vertex] == -1 )
+          {
+            cornerForVertex[vertex] = i;
+          }
+          int lod = m_LOD[vertex];
+          if ( lod == currentLODWave )
+          {
+            if ( !expandArray[vertex] )
+            {
+              int orderV = m_deathAge[vertex];
+              //TODO msati3: Could use connectivity here as well
+              pt[] result = m_packetFetcher.fetchGeometry(currentLODWave, orderV);
+              if ( result[1] != null )
+              {
+                expandArray[vertex] = true;
+                numExpandable++;
+              }
+            }
+          }
+          numValidExpandable++;
+        }
+      }
+      print("\n" + numValidExpandable+ " " + numExpandable + " ");
+
+      int[] corners = new int[3*numExpandable];
+      int sizeSplitBitsArray = 0;
+      int sizeCornersArray = 0;
+      for (int i = 0; i < nv; i++)
+      {
+        if ( d2( centerSphere, G[i] ) <= r2 )
+        {
+          m_expandBits.add(expandArray[i]);
+          totalBits++;
+          if ( expandArray[i] )
+          {
+            sizeSplitBitsArray += populateSplitBitsArray(splitBitsArray, currentLODWave, cornerForVertex[i], corners, sizeCornersArray, sizeSplitBitsArray);
+            totalBits += getValence(cornerForVertex[i]);
+            sizeCornersArray += 3;
+          }
+        }
+      }
+
+      for (int i = 0; i < sizeSplitBitsArray; i++)
+      {
+        m_expandBits.add( splitBitsArray[i] );
+      }
+
+      int countExpanded = 0;
+      int numVertices = nv;
+      for (int i = 0; i < numVertices; i++)
+      {
+        if ( expandArray[i] && d2( centerSphere, G[i] ) <= r2 )
+        {
+          int orderV = m_deathAge[i];
+          pt[] result = m_packetFetcher.fetchGeometry(currentLODWave, orderV);
+          m_expandVertices.add(P(result[0])); m_expandVertices.add(P(result[1])); m_expandVertices.add(P(result[2]));
+          int[] ct = {corners[countExpanded], corners[countExpanded+1], corners[countExpanded+2]};
+          countExpanded+=3;
+          stitch( result, currentLODWave, orderV, ct );
+        }
+      }
+      
+      currentLODWave--;
+      print("Debug " + numVertices + " " + sizeSplitBitsArray + "\n");
+      print("Expanded one level. New number of vertices " + nv + "\n");
+    }
+    print("Total bits per vertex " + totalBits + " " + (float)totalBits/g_totalVertices + "\n");
+  }
 
   void expand(int corner)
   {

@@ -104,6 +104,106 @@ class WorkingMeshClient extends Mesh
     }
     return cn;
   }
+  
+  void expandRegion(int corner)
+  {
+    float r2 = 100;
+    pt centerSphere = P(G[v(corner)]);
+
+    m_workingMesh.expandRegion(corner);
+    Boolean[] expansionBits = m_workingMesh.getExpansionBits();
+    pt[] vertices = m_workingMesh.getExpansionVertices();
+    int[] corners; //Stores the number of corners expandable for the current LOD wave
+
+    int currentLODStartPositionBits = 0;
+    int currentLODStartPositionVert = 0;
+    int currentLODWave = NUMLODS-1;
+    
+    if ( DEBUG && DEBUG_MODE >= LOW )
+    {
+      print("Num vertices in expansion packet total " + vertices.length + "\n");
+    }
+    while (currentLODStartPositionBits != expansionBits.length)
+    {
+      int countExpandable = 0;
+      int [] cornerForVertex = new int[nv];
+      int countValidVerts = 0;
+      for (int i = 0; i < nv; i++)
+      {
+        if ( d2( centerSphere, G[i] ) <= r2 )
+        {
+          cornerForVertex[i] = -1;
+          countValidVerts++;
+          if ( expansionBits[currentLODStartPositionBits+countValidVerts] )
+          {
+            countExpandable++;
+          }
+        }
+      }
+      
+      for (int i = 0; i < nc; i++)
+      {
+        int vertex = v(i);
+        if ( cornerForVertex[vertex] == -1 )
+        {
+          cornerForVertex[vertex] = i;
+        }
+      }
+      
+      int currentExpandableCount = 0;
+      int offsetIntoSplitBits = 0;
+      corners = new int[countExpandable*3];
+      countValidVerts = 0;
+      for (int i = 0; i < nv; i++)
+      {
+        if ( d2( centerSphere, G[i] ) <= r2 )
+        {
+          if ( expansionBits[currentLODStartPositionBits+countValidVerts] )
+          {
+            countValidVerts++;
+            int[] cn = getCornerNumbers(expansionBits, currentLODStartPositionBits+nv+offsetIntoSplitBits, cornerForVertex[i]);
+            offsetIntoSplitBits += getValence(cornerForVertex[i]);
+            for ( int j = 0; j < 3; j++ )
+            {
+              corners[currentExpandableCount++] = cn[j];
+            }
+          }
+        }
+      }
+
+      int numVertices = nv;
+      int numExpanded = 0;
+      countValidVerts = 0;
+      for (int i = 0; i < numVertices; i++)
+      {
+        if ( d2( centerSphere, G[i] ) <= r2 )
+        {
+          if ( expansionBits[currentLODStartPositionBits+countValidVerts] )
+          {
+            countValidVerts++;
+            pt[] result = {vertices[currentLODStartPositionVert+3*numExpanded], vertices[currentLODStartPositionVert+3*numExpanded+1], vertices[currentLODStartPositionVert+3*numExpanded+2]};
+            int[] ct = {corners[3*numExpanded], corners[3*numExpanded+1], corners[3*numExpanded+2]};
+            numExpanded++;
+            int orderV = m_orderV[i];
+            stitch( result, currentLODWave, orderV, ct );
+          }
+        }
+        else
+        {
+          m_orderV[i] *= 3;
+        }
+      }
+ 
+      currentLODStartPositionBits += numVertices + offsetIntoSplitBits;
+      currentLODStartPositionVert += numExpanded*3;
+      currentLODWave--;
+      if ( DEBUG && DEBUG_MODE >= VERBOSE )
+      {
+        print("Debug " + numVertices + " " + offsetIntoSplitBits + " " + countExpandable + "\n");
+        print("One level of expansion. New vertex count " + nv + ". New start position " + currentLODStartPositionBits + "\n");
+      }
+    }
+  }
 
   void expandMesh()
   {

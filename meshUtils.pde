@@ -184,7 +184,7 @@ class WorkingMeshUserInputHandler extends MeshUserInputHandler
       }
       if(keyPressed&&key == 'G') 
       {
-        m_mesh.expand(m_mesh.cc);
+        m_mesh.expandRegion(m_mesh.cc);
       }
     }
   }
@@ -208,6 +208,10 @@ class WorkingMeshClientUserInputHandler extends MeshUserInputHandler
       m_mesh.pickc(Pick()); 
       m_mesh.expand(m_mesh.cc); 
     }// sets c to closest corner in M 
+    if(keyPressed&&key == 'G') 
+    {
+      m_mesh.expandRegion(m_mesh.cc);
+    }
   }
   
   public void onKeyPress()
