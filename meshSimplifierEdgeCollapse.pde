@@ -15,6 +15,8 @@ class MeshSimplifierEdgeCollapse
   {
     m_mesh = m;
     m_simplifiedMesh = new Mesh();
+    m_simplifiedMesh.initMesh( m_mesh.nv, m_mesh.nt, true );
+
     m_succLODMapperManager = sLODMapperManager;
     m_vertexMappingBaseToMain = new int[m_mesh.nv][3];
     m_vertexToTriagleMappingBaseToMain = new int[m_mesh.nv][4];

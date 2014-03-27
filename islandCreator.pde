@@ -350,6 +350,7 @@ class IslandCreator
   
   private void resetMarkers()
   {
+    //print("Number of triangles " + m_mesh.nt + "\n");
     for (int i = 0; i < m_mesh.nt; i++)
     {
       if ( !m_trianglesVisited[i] )

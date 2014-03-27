@@ -40,7 +40,7 @@ class Mesh {
   //  ==================================== Internal variables ====================================
   // max sizes, counts, selected corners
   //5500
-  int maxnv = 100000;                         //  max number of vertices
+  int maxnv = 550000;                         //  max number of vertices
   int maxnt = maxnv*2;                       // max number of triangles
   int nv = 0;                              // current  number of vertices
   int nt = 0;                   // current number of triangles
@@ -123,6 +123,42 @@ class Mesh {
   {
     m_userInputHandler = new MeshUserInputHandler(this);
     m_selectedRegion = null;
+  }
+  
+  void initMesh( int vertexCount, int triangleCount, boolean fSubdivide )
+  {
+    // primary tables
+    V = new int [3*triangleCount];               // V table (triangle/vertex indices)
+    O = new int [3*triangleCount];               // O table (opposite corner indices)
+    G = new pt [vertexCount];                   // geometry table (vertices)
+
+    Nv = new vec [maxnv];                 // vertex normals or laplace vectors
+    Nt = new vec [maxnt];                // triangles normals
+
+    // auxiliary tables for bookkeeping
+    cm = new int[3*maxnt];               // corner markers: 
+    vm = new int[maxnv];               // vertex markers: 0=not marked, 1=interior, 2=border, 3=non manifold
+    tm = new int[maxnt];               // triangle markers: 0=not marked, 
+    cm2 = new int[maxnt];               // triangle markers: 0=not marked, 
+
+    // other tables
+    Mv = null;
+    Valence = null;
+
+    Mt = null;                 // triangle markers for distance and other things   
+    VisitedT = null;  // triangle visited
+    visible = new boolean[triangleCount];    // set if triangle visible
+    W = null;          // mid-edge vertex indices for subdivision (associated with corner opposite to edge)
+    if ( !fSubdivide )
+    {
+      G2 = null; //2008-03-06 JJ misc
+    }
+    Border = null;   // vertex is border
+    VisitedV = null;  // vertex visited
+    distance = null;
+    P = null;       // marker of corners in a path to parent triangle for tracing back the paths
+    Distance = null;           // triangle markers for distance fields 
+    SMt = null;                // sum of triangle markers for isolation
   }
 
   void setMeshNumber( int meshNumber )

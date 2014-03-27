@@ -232,7 +232,7 @@ class SimplificationController
 
     if ( m_maxMesh - m_minMesh >= c_numMeshes )
     {
-      /*for (int i = m_minMesh; i < m_maxMesh; i++)
+       for (int i = m_minMesh; i < m_maxMesh; i++)
        {
        print("Move mesh at index " + (i+1) + " to viewport " + (i - m_minMesh) + "\n");
        m_viewportManager.unregisterMeshFromViewport( m_displayMeshes.get(i), i - m_minMesh );
@@ -244,10 +244,10 @@ class SimplificationController
        print("Adding mesh at index " + (m_maxMesh) + " at viewport index " + (m_maxMesh - 1 - m_minMesh) + "\n");
        m_viewportManager.registerMeshToViewport( m_displayMeshes.get(m_maxMesh), m_maxMesh - 1 - m_minMesh );
        m_minMesh++;
-       m_viewportManager.selectViewport( 3 );*/
-      m_viewportManager.unregisterMeshFromViewport( m_displayMeshes.get(m_maxMesh - 1), m_maxMesh - 1 - m_minMesh );
-      m_viewportManager.registerMeshToViewport( m_displayMeshes.get(m_maxMesh), m_maxMesh - 1 - m_minMesh );
-      m_minMesh++;
+       m_viewportManager.selectViewport( 3 );
+       //m_viewportManager.unregisterMeshFromViewport( m_displayMeshes.get(m_maxMesh - 1), m_maxMesh - 1 - m_minMesh );
+       //m_viewportManager.registerMeshToViewport( m_displayMeshes.get(m_maxMesh), m_maxMesh - 1 - m_minMesh );
+       //m_minMesh++;
     }
     else
     {

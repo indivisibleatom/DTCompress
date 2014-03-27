@@ -1,4 +1,4 @@
-int NUMLODS = 6;
+int NUMLODS = 7;
 
 class SuccLODMapperManager
 {
@@ -476,11 +476,6 @@ class SuccLODMapper
         int t1 = getTriangleNumbering(refTriangle1);
         int t2 = getTriangleNumbering(refTriangle2);
         int t3 = getTriangleNumbering(refTriangle3);
-        
-        if ( t2 == 145 || t1 == 145 || t3 == 145 )
-        {
-          print("Yes. Correct " + t1 + " " + t2 + " " + t3 + " " + offset1 + " " + offset2 + " " + offset3 + "\n");
-        }
         
         m_edgeExpansionPacket[3*t1 + offset1] = true;
         m_edgeExpansionPacket[3*t2 + offset2] = true;

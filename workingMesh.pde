@@ -1,3 +1,5 @@
+float g_roiSize = 2500;
+
 class FutureLODAndVOrder
 {
   private int m_order;
@@ -20,6 +22,7 @@ class WorkingMesh extends Mesh
 
   int[] m_orderT = new int[maxnt]; //The order of the triangle
   int[] m_ageT = new int[maxnt];
+  int[] m_descendedFrom = new int[maxnv];
   
   ArrayList<Boolean> m_expandBits;
   ArrayList<pt> m_expandVertices;
@@ -31,12 +34,7 @@ class WorkingMesh extends Mesh
 
   WorkingMesh( Mesh m, SuccLODMapperManager lodMapperManager )
   {
-    G = m.G;
-    V = m.V;
-    O = m.O;
-    nv = m.nv;
-    nt = m.nt;
-    nc = m.nc;
+    m.copyTo(this);
     
     m_expandBits = new ArrayList<Boolean>();
     m_expandVertices = new ArrayList<pt>();
@@ -61,6 +59,7 @@ class WorkingMesh extends Mesh
       FutureLODAndVOrder future = getLODAndVAge( NUMLODS - 1, i );
       m_LOD[i] = future.lod();
       m_deathAge[i] = future.orderV();
+      m_descendedFrom[i] = i;
     }
   }
   
@@ -500,20 +499,21 @@ class WorkingMesh extends Mesh
   
   void selectRegion(int corner)
   {
-    float r2 = 10000;
+    float r2 = g_roiSize;
     pt centerSphere = P(G[v(corner)]);
     boolean[] inRegion = new boolean[nv];
 
     inRegion[v(corner)] = true;
-    expandInRegion( inRegion, 2 );
+    expandInRegion( inRegion, 5 );
     setRegion(inRegion);
   }
   
   void expandRegion(int corner)
   {
-    float r2 = 10000;
+    float r2 = g_roiSize;
     pt centerSphere = P(G[v(corner)]);
     g_centerSphere = centerSphere;
+    int vertexToExpand = v(corner);
 
     int currentLODWave = NUMLODS - 1;
     boolean[] expandArray;
@@ -525,6 +525,7 @@ class WorkingMesh extends Mesh
     boolean[] inRegion;
     m_expandVertices.clear();
     m_expandBits.clear();
+
     while (currentLODWave >= 0)
     {
       numExpandable = 0;
@@ -536,11 +537,24 @@ class WorkingMesh extends Mesh
       for (int i = 0; i < nv; i++)
       {
         cornerForVertex[i] = -1;
-        if ( d2(centerSphere, G[i]) <= r2 )
+        if ( m_descendedFrom[i] == vertexToExpand  )
         {
           inRegion[i] = true;
         }
       }
+      if ( currentLODWave == NUMLODS - 1 )
+      {
+        expandInRegion( inRegion, 5 );
+        for (int i = 0; i < nv; i++)
+        {
+          if ( inRegion[i] == true )
+          {
+            m_descendedFrom[i] = vertexToExpand;
+          }
+        }
+      }
+
+
       if ( currentLODWave > 0 )
       {
         expandInRegion( inRegion, currentLODWave );
@@ -622,7 +636,7 @@ class WorkingMesh extends Mesh
     int countVerticesComplete = 0;
     for (int i = 0; i < nv; i++)
     {
-      if ( d2(centerSphere, G[i]) <= r2 )
+      if ( m_descendedFrom[i] == vertexToExpand )
       {
         countVerticesComplete++;
       }
@@ -673,6 +687,8 @@ class WorkingMesh extends Mesh
     int v1 = addVertex(g[0], currentLOD-1, 3*currentOrderV);
     int v2 = addVertex(g[1], currentLOD-1, 3*currentOrderV+1);
     int v3 = addVertex(g[2], currentV, currentLOD-1, 3*currentOrderV+2);
+    m_descendedFrom[v1] = m_descendedFrom[currentV];
+    m_descendedFrom[v2] = m_descendedFrom[currentV];
 
     int offsetTriangles = m_baseTriangles;
     int nuLowerLOD = NUMLODS - currentLOD;

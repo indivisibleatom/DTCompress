@@ -1,7 +1,7 @@
 class WorkingMeshClient extends Mesh
 {
-  int[] m_orderV = new int[maxnv]; //The order of the vertex
   int[] m_orderT = new int[maxnt]; //The order of the triangle
+  int[] m_orderV = new int[maxnv];
   WorkingMesh m_workingMesh;
   int m_baseVerts;
   int m_baseTriangles;
@@ -29,7 +29,6 @@ class WorkingMeshClient extends Mesh
     {
       m_orderT[i] = i;
     }
-    
     for (int i = 0; i < m.nv; i++)
     {
       m_orderV[i] = i;
@@ -105,9 +104,42 @@ class WorkingMeshClient extends Mesh
     return cn;
   }
   
+  private void markAllSurrounding( boolean[] newInRegion, boolean[] inRegion, int corner )
+  {
+    int currentCorner = corner;
+    do
+    {
+      newInRegion[v(n(currentCorner))] = true;
+      currentCorner = s(currentCorner);
+    }while(currentCorner != corner);
+  }
+  
+  private void expandInRegion( boolean[] inRegion, int numRings )
+  {
+    boolean[] newInRegion = new boolean[nv];
+    for (int i = 0; i < numRings; i++)
+    {
+      for (int j = 0; j < nv; j++)
+      {
+        newInRegion[j] = inRegion[j];
+      }
+      for (int j = 0; j < nc; j++)
+      {
+        if (inRegion[v(j)])
+        {
+          markAllSurrounding(newInRegion, inRegion, j);
+        }
+      }
+      for (int j = 0; j < nv; j++)
+      {
+        inRegion[j] = newInRegion[j];
+      }
+    }
+  }
+  
   void expandRegion(int corner)
   {
-    float r2 = 10000;
+    float r2 = g_roiSize;
     pt centerSphere = P(G[v(corner)]);
 
     m_workingMesh.expandRegion(corner);
@@ -128,9 +160,24 @@ class WorkingMeshClient extends Mesh
       int countExpandable = 0;
       int [] cornerForVertex = new int[nv];
       int countValidVerts = 0;
+      boolean[] inRegion = new boolean[nv];
+
       for (int i = 0; i < nv; i++)
       {
-        if ( d2( centerSphere, G[i] ) <= r2 )
+        cornerForVertex[i] = -1;
+        if ( d2(centerSphere, G[i]) <= r2 )
+        {
+          inRegion[i] = true;
+        }
+      }
+      if ( currentLODWave > 0 )
+      {
+        expandInRegion( inRegion, currentLODWave );
+      }
+      
+      for (int i = 0; i < nv; i++)
+      {
+        if ( inRegion[i] )
         {
           cornerForVertex[i] = -1;
           countValidVerts++;
@@ -156,7 +203,7 @@ class WorkingMeshClient extends Mesh
       countValidVerts = 0;
       for (int i = 0; i < nv; i++)
       {
-        if ( d2( centerSphere, G[i] ) <= r2 )
+        if ( inRegion[i] )
         {
           if ( expansionBits[currentLODStartPositionBits+countValidVerts] )
           {
@@ -176,7 +223,7 @@ class WorkingMeshClient extends Mesh
       countValidVerts = 0;
       for (int i = 0; i < numVertices; i++)
       {
-        if ( d2( centerSphere, G[i] ) <= r2 )
+        if ( inRegion[i] )
         {
           if ( expansionBits[currentLODStartPositionBits+countValidVerts] )
           {
@@ -184,8 +231,7 @@ class WorkingMeshClient extends Mesh
             pt[] result = {vertices[currentLODStartPositionVert+3*numExpanded], vertices[currentLODStartPositionVert+3*numExpanded+1], vertices[currentLODStartPositionVert+3*numExpanded+2]};
             int[] ct = {corners[3*numExpanded], corners[3*numExpanded+1], corners[3*numExpanded+2]};
             numExpanded++;
-            int orderV = m_orderV[i];
-            stitch( i, result, currentLODWave, orderV, ct );
+            stitch( i, result, currentLODWave, m_orderV[i], ct );
           }
         }
         else
@@ -250,10 +296,6 @@ class WorkingMeshClient extends Mesh
         if ( expansionBits[currentLODStartPositionBits+i] )
         {
           int[] cn = getCornerNumbers(expansionBits, currentLODStartPositionBits+nv+offsetIntoSplitBits, cornerForVertex[i]);
-          if ( currentLODWave == NUMLODS-2 && i == 290 )
-          {
-            print(offsetIntoSplitBits + " " + i + " " + cornerForVertex[i] + "\n");
-          }
           offsetIntoSplitBits += getValence(cornerForVertex[i]);
           for ( int j = 0; j < 3; j++ )
           {
@@ -283,7 +325,7 @@ class WorkingMeshClient extends Mesh
       currentLODStartPositionBits += numVertices + offsetIntoSplitBits;
       currentLODStartPositionVert += numExpanded*3;
       currentLODWave--;
-      if ( DEBUG && DEBUG_MODE >= VERBOSE )
+      if ( DEBUG && DEBUG_MODE >= LOW )
       {
         print("Debug " + numVertices + " " + offsetIntoSplitBits + " " + countExpandable + "\n");
         print("One level of expansion. New vertex count " + nv + ". New start position " + currentLODStartPositionBits + "\n");
@@ -388,6 +430,7 @@ class WorkingMeshClient extends Mesh
   int addVertex(pt p, int index, int lod, int orderV)
   {
     int vertexIndex = index;
+    G[vertexIndex] = p;
     m_orderV[vertexIndex] = orderV;
     return vertexIndex;
   }
