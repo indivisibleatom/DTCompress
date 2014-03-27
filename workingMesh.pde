@@ -19,6 +19,7 @@ class WorkingMesh extends Mesh
 {
   int[] m_LOD = new int[maxnv]; //LOD per vertex
   int[] m_deathAge = new int[maxnv]; //The order of the vertex
+  int[] m_birthAge = new int[maxnv];
 
   int[] m_orderT = new int[maxnt]; //The order of the triangle
   int[] m_ageT = new int[maxnt];
@@ -58,6 +59,7 @@ class WorkingMesh extends Mesh
     {
       FutureLODAndVOrder future = getLODAndVAge( NUMLODS - 1, i );
       m_LOD[i] = future.lod();
+      m_birthAge[i] = NUMLODS - 1;
       m_deathAge[i] = future.orderV();
       m_descendedFrom[i] = i;
     }
@@ -189,6 +191,7 @@ class WorkingMesh extends Mesh
     FutureLODAndVOrder future = getLODAndVAge( lod, orderV );
     m_LOD[vertexIndex] = future.lod();
     m_deathAge[vertexIndex] = future.orderV();
+    m_birthAge[vertexIndex] = lod;
     return vertexIndex;
   }
 
@@ -199,6 +202,7 @@ class WorkingMesh extends Mesh
     FutureLODAndVOrder future = getLODAndVAge( lod, orderV );
     m_LOD[vertexIndex] = future.lod();
     m_deathAge[vertexIndex] = future.orderV();
+    m_birthAge[vertexIndex] = lod;
     return vertexIndex;
   }
 
@@ -542,7 +546,7 @@ class WorkingMesh extends Mesh
           inRegion[i] = true;
         }
       }
-      if ( currentLODWave == NUMLODS - 1 )
+      /*if ( currentLODWave == NUMLODS - 1 )
       {
         expandInRegion( inRegion, 5 );
         for (int i = 0; i < nv; i++)
@@ -552,8 +556,7 @@ class WorkingMesh extends Mesh
             m_descendedFrom[i] = vertexToExpand;
           }
         }
-      }
-
+      }*/
 
       if ( currentLODWave > 0 )
       {
@@ -561,6 +564,122 @@ class WorkingMesh extends Mesh
       }
       setRegion(inRegion);
  
+      int numValidExpandable = 0;
+      for (int i = 0; i < nc; i++)
+      {
+        int vertex = v(i);
+        if ( m_birthAge[vertex] >= currentLODWave )
+        {
+          if ( inRegion[vertex] )
+          {
+            if ( cornerForVertex[vertex] == -1 )
+            {
+              cornerForVertex[vertex] = i;
+            }
+            int lod = m_LOD[vertex];
+            if ( lod == currentLODWave )
+            {
+              if ( !expandArray[vertex] )
+              {
+                int orderV = m_deathAge[vertex];
+                //TODO msati3: Could use connectivity here as well
+                pt[] result = m_packetFetcher.fetchGeometry(currentLODWave, orderV);
+                if ( result[1] != null )
+                {
+                  expandArray[vertex] = true;
+                  numExpandable++;
+                }
+              }
+            }
+            numValidExpandable++;
+          }
+        }
+      }
+      print("\n" + numValidExpandable+ " " + numExpandable + " ");
+
+      int[] corners = new int[3*numExpandable];
+      int sizeSplitBitsArray = 0;
+      int sizeCornersArray = 0;
+      for (int i = 0; i < nv; i++)
+      {
+        if ( inRegion[i] && m_birthAge[i] >= currentLODWave )
+        {
+          m_expandBits.add(expandArray[i]);
+          totalBits++;
+          if ( expandArray[i] )
+          {
+            sizeSplitBitsArray += populateSplitBitsArray(splitBitsArray, currentLODWave, cornerForVertex[i], corners, sizeCornersArray, sizeSplitBitsArray);
+            totalBits += getValence(cornerForVertex[i]);
+            sizeCornersArray += 3;
+          }
+        }
+      }
+
+      for (int i = 0; i < sizeSplitBitsArray; i++)
+      {
+        m_expandBits.add( splitBitsArray[i] );
+      }
+
+      int countExpanded = 0;
+      int numVertices = nv;
+      for (int i = 0; i < numVertices; i++)
+      {
+        if ( expandArray[i] && inRegion[i] && m_birthAge[i] >= currentLODWave )
+        {
+          int orderV = m_deathAge[i];
+          pt[] result = m_packetFetcher.fetchGeometry(currentLODWave, orderV);
+          m_expandVertices.add(P(result[0])); m_expandVertices.add(P(result[1])); m_expandVertices.add(P(result[2]));
+          int[] ct = {corners[countExpanded], corners[countExpanded+1], corners[countExpanded+2]};
+          countExpanded+=3;
+          stitch( i, result, currentLODWave, orderV, ct );
+        }
+      }
+      
+      currentLODWave--;
+      print("Debug " + numVertices + " " + sizeSplitBitsArray + "\n");
+      print("Expanded one level. New number of vertices " + nv + "\n");
+    }
+    int countVerticesComplete = 0;
+    for (int i = 0; i < nv; i++)
+    {
+      if ( m_descendedFrom[i] == vertexToExpand )
+      {
+        countVerticesComplete++;
+      }
+    }
+    print("Total number of fully vertices added " + m_expandVertices.size() + "\n");
+    print("Total bits per fully expanded vertices " + totalBits + " " + countVerticesComplete + " " + (float)totalBits/countVerticesComplete + "\n");
+  }
+
+  /*void drillDown(int corner)
+  {
+    boolean[] inRegion = new boolean[nv];
+    int vertex = v(corner);
+    int lod = m_LOD[vertex];
+    int ringSize = m_deathAge[vertex] - lod;
+    int deathAge = m_deathAge[vertex];
+    
+    inRegion[vertex] = true;
+    expandInRegion(inRegion, ringSize);
+
+    int currentLODWave = lod;
+    boolean[] expandArray;
+    int[] cornerForVertex;
+    boolean[] splitBitsArray;
+    pt[] expandVertices;
+    int numExpandable;
+    int totalBits = 0;
+    boolean[] inRegion;
+    m_expandVertices.clear();
+    m_expandBits.clear();
+
+    while (currentLODWave >= 0)
+    {
+      numExpandable = 0;
+      expandArray = new boolean[nv];
+      cornerForVertex = new int[nv];
+      splitBitsArray = new boolean[nc];
+      
       int numValidExpandable = 0;
       for (int i = 0; i < nc; i++)
       {
@@ -633,17 +752,11 @@ class WorkingMesh extends Mesh
       print("Debug " + numVertices + " " + sizeSplitBitsArray + "\n");
       print("Expanded one level. New number of vertices " + nv + "\n");
     }
-    int countVerticesComplete = 0;
-    for (int i = 0; i < nv; i++)
-    {
-      if ( m_descendedFrom[i] == vertexToExpand )
-      {
-        countVerticesComplete++;
-      }
-    }
+    int countVerticesComplete = 1;
+
     print("Total number of fully vertices added " + m_expandVertices.size() + "\n");
     print("Total bits per fully expanded vertices " + totalBits + " " + countVerticesComplete + " " + (float)totalBits/countVerticesComplete + "\n");
-  }
+  }*/
 
   void expand(int corner)
   {
