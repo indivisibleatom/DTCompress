@@ -46,7 +46,6 @@ void setup() {
 void draw() {  
   smooth();
   background(white);
-  camera();
   g_controller.viewportManager().draw();
   gl.glColor3i(255,0,0);
  } // end draw

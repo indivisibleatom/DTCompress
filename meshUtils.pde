@@ -73,7 +73,7 @@ class MeshUserInputHandler
     if(key=='U') m_mesh.unswing();
     
     // mesh edits, smoothing, refinement
-    if(key=='v') m_mesh.flip(); // clip edge opposite to M.cc
+    //if(key=='v') m_mesh.flip(); // clip edge opposite to M.cc
     if(key=='F') {m_mesh.smoothen(); m_mesh.normals();}
     if(key=='Y') {m_mesh.refine(); m_mesh.makeAllVisible(); g_totalVertices = m_mesh.nv;}
     if(key=='d') {m_mesh.clean();}

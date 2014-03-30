@@ -60,6 +60,18 @@ class IslandCreator
     return valence;
   }
     
+  private int getIslandValenceNonChannel(int corner)
+  {
+    int currentCorner = corner;
+    int valence = 0;
+    do 
+    {
+      valence += m_mesh.getValence(currentCorner);
+      currentCorner = m_mesh.n(currentCorner);
+    } while ( currentCorner != corner );
+    return valence - 9;
+  }
+
   private int getValenceNonChannel(int corner)
   {
     //Skip the first corner, that will become a non-channel
@@ -69,7 +81,14 @@ class IslandCreator
     {
       if ( m_mesh.tm[ m_mesh.t( currentCorner ) ] != CHANNEL )
       {
-        valence++;
+        if ( m_mesh.tm[ m_mesh.t( currentCorner ) ] == ISLAND )
+        {
+          valence += getIslandValenceNonChannel( currentCorner );
+        }
+        else
+        {
+          valence++;
+        }
       }
       currentCorner = m_mesh.s(currentCorner);
     } while ( currentCorner != corner );
@@ -281,10 +300,23 @@ class IslandCreator
     m_mesh.vm[m_mesh.v(m_mesh.p(corner))] = 1;
   }
   
+  private void visitTriangle(int corner, int numExpandable)
+  {
+    m_mesh.tm[m_mesh.t(corner)] = ISLAND;
+    m_mesh.tm[m_mesh.t(m_mesh.o(corner))] = CHANNEL;
+    m_mesh.tm[m_mesh.t(m_mesh.o(m_mesh.n(corner)))] = CHANNEL;
+    m_mesh.tm[m_mesh.t(m_mesh.o(m_mesh.p(corner)))] = CHANNEL;
+    
+    m_mesh.vm[m_mesh.v(corner)] = 1;
+    m_mesh.vm[m_mesh.v(m_mesh.n(corner))] = 1;
+    m_mesh.vm[m_mesh.v(m_mesh.p(corner))] = 1;
+  }
+
+
   private int findNewPossibles(int corner, int []possibles)
   {
     int numPossibles = 0;
-    int currentCorner = corner;
+    int currentCorner = m_mesh.p(corner);
     do
     {
       int possibleCornerO = m_mesh.s(m_mesh.s(m_mesh.s(currentCorner)));
@@ -294,12 +326,11 @@ class IslandCreator
         if (validTriangle(possibleCorner))
         {
           possibles[numPossibles++] = possibleCorner;
-          break;
         }
         possibleCornerO = m_mesh.s(possibleCornerO);
       } while (possibleCornerO != m_mesh.u(currentCorner) );
-      currentCorner = m_mesh.n(currentCorner);
-    } while(numPossibles == 0 && currentCorner != corner);
+      currentCorner = m_mesh.p(currentCorner);
+    } while(currentCorner != m_mesh.p(corner));
     return numPossibles;
   }
    
@@ -350,36 +381,35 @@ class IslandCreator
   
   private void resetMarkers()
   {
-    //print("Number of triangles " + m_mesh.nt + "\n");
     for (int i = 0; i < m_mesh.nt; i++)
     {
-      if ( !m_trianglesVisited[i] )
-      {
-        m_mesh.tm[i] = 0;
-        m_mesh.cm2[i] = 0;
-        m_mesh.vm[m_mesh.v(3*i)] = 0;
-        m_mesh.vm[m_mesh.v(3*i+1)] = 0;
-        m_mesh.vm[m_mesh.v(3*i+2)] = 0;
-      }
+        if ( !m_trianglesVisited[i] )
+        {
+          m_mesh.tm[i] = 0;
+          m_mesh.cm2[i] = 0;
+          m_mesh.vm[m_mesh.v(3*i)] = 0;
+          m_mesh.vm[m_mesh.v(3*i+1)] = 0;
+          m_mesh.vm[m_mesh.v(3*i+2)] = 0;
+        }
     }
   }
  
   private int internalCreateIslandsPass1()
   {
-    int[] newPossibles = new int[3];
+    int[] newPossibles = new int[100];
     int numPossibles;
     Integer corner;
     int numberExpandable = 0;
-    while ((corner = m_cornerFifo.poll()) != null)
-    {
-      if (validTriangle(corner)) //Check for validity at time of processing, as in between time of addition to fifo and processing, this might be changed
-      {
-        numberExpandable++;
-        visitTriangle(corner);
-        numPossibles = findNewPossibles(corner, newPossibles);
-        addPossiblesToFifo(newPossibles, numPossibles);
-      }
-    }
+        while ((corner = m_cornerFifo.pollLast()) != null)
+        {
+          if (validTriangle(corner)) //Check for validity at time of processing, as in between time of addition to fifo and processing, this might be changed
+          {
+            numberExpandable++;
+            visitTriangle(corner);
+            numPossibles = findNewPossibles(corner, newPossibles);
+            addPossiblesToFifo(newPossibles, numPossibles);
+          }
+        }
     return numberExpandable;
   }
   
@@ -500,7 +530,8 @@ class IslandCreator
     int numTries = 0;
     int maxIslandSeed = 0;
     int bestCost = -2147438648;
-    int numCreatedInit = internalCreateIslandsPass0();
+    int numCreatedInit = 0;
+    numCreatedInit = internalCreateIslandsPass0();
     int startFifoSize = m_cornerFifo.size();
     int numCreated = numCreatedInit;
     for (int i = 0; i < LOD*100 ; i++)
@@ -522,12 +553,10 @@ class IslandCreator
       
       if ( totalCost > bestCost )
       {
-        print("Cost " + totalCost + "\n");
         maxIslandSeed = m_seed;
         bestCost = totalCost;
       }
     }
-    
     m_mesh.resetMarkers();
     m_cornerFifo.clear();
     numCreated = 0;

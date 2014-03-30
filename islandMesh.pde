@@ -11,6 +11,8 @@ int ISLAND = 9;
 
 class IslandMesh extends Mesh
 {
+ int[] cm2 = new int[3*maxnt];
+  
  IslandMesh()
  {
    m_userInputHandler = new IslandMeshUserInputHandler(this);

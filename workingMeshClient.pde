@@ -1,3 +1,5 @@
+int g_pos;
+
 class WorkingMeshClient extends Mesh
 {
   int[] m_orderT = new int[maxnt]; //The order of the triangle
@@ -5,6 +7,7 @@ class WorkingMeshClient extends Mesh
   WorkingMesh m_workingMesh;
   int m_baseVerts;
   int m_baseTriangles;
+  int m_countSplitBits;
 
 
   WorkingMeshClient(Mesh m, WorkingMesh w)
@@ -17,6 +20,7 @@ class WorkingMeshClient extends Mesh
     
     m_baseVerts = nv;
     m_baseTriangles = nt;
+    m_countSplitBits = 0;
     
     m_userInputHandler = new WorkingMeshClientUserInputHandler(this);
 
@@ -60,36 +64,59 @@ class WorkingMeshClient extends Mesh
   private int[] getCornerNumbers( Boolean[] expansionBits, int startPosition, int startCorner )
   {
     int[] cn = new int[3];
-    int cornerAddedCount = 0;
     int smallestEpansionCorner = findSmallestExpansionCorner(expansionBits, startPosition, startCorner);
     int initCorner = smallestEpansionCorner;
-    int swingCountToSmallest = 0;
-    int swingCountTotal = getValence(startCorner);
 
-    int currentCorner = startCorner;
-    do
+    //count number of bits
+    int numBits = 0;
+    int count = 0;
+    for (int i = startPosition; i < expansionBits.length; i++)
     {
-      if ( currentCorner == initCorner )
+      numBits++;
+      if ( expansionBits[i] )
+      {
+        count++;
+      }
+      if (count == 3)
       {
         break;
       }
-      swingCountToSmallest++;
-      currentCorner = s(currentCorner);
-    } while( currentCorner != startCorner );
-    
+    }
+
+    int swingCountTotal = numBits;
     int swingCount = 0;
-    currentCorner = initCorner;
+    int cornerAddedCount = 0;
+    int smallestCornerPerm = 0;
+    int currentCorner = startCorner;
     do
     {
-      int swingCountCurrent = (swingCountToSmallest+swingCount)%swingCountTotal;
-      if ( expansionBits[startPosition+swingCountCurrent] )
+      if ( expansionBits[startPosition+swingCount] )
       {
+        print((startPosition + swingCount - g_pos) + " " );
+        if ( currentCorner == initCorner )
+        {
+          smallestCornerPerm = cornerAddedCount;
+        }
         cn[cornerAddedCount++] = currentCorner;
       }
       swingCount++;
       currentCorner = s(currentCorner);
-    } while( currentCorner != initCorner );
-    if ( DEBUG && DEBUG_MODE >= LOW )
+    } while( currentCorner != startCorner && cornerAddedCount != 3 );
+    if ( smallestCornerPerm == 1 )
+    {
+      int temp = cn[0];
+      cn[0] = cn[1];
+      cn[1] = cn[2];
+      cn[2] = temp;
+    }
+    else if ( smallestCornerPerm == 2 )
+    {
+      int temp = cn[0];
+      cn[0] = cn[2];
+      cn[2] = cn[1];
+      cn[1] = temp;
+    }
+    if ( DEBUG && DEBUG_MODE >= VERBOSE )
     {
       if ( cornerAddedCount != 3 )
       {
@@ -101,6 +128,7 @@ class WorkingMeshClient extends Mesh
         print("WorkingMeshClient::getCornerNumbers returns != 3 as expandable corner count for vertex " + v(startCorner) + " " + cornerAddedCount + "\n");
       }
     }
+    m_countSplitBits = numBits;
     return cn;
   }
   
@@ -209,7 +237,7 @@ class WorkingMeshClient extends Mesh
           {
             countValidVerts++;
             int[] cn = getCornerNumbers(expansionBits, currentLODStartPositionBits+nv+offsetIntoSplitBits, cornerForVertex[i]);
-            offsetIntoSplitBits += getValence(cornerForVertex[i]);
+            offsetIntoSplitBits += m_countSplitBits;
             for ( int j = 0; j < 3; j++ )
             {
               corners[currentExpandableCount++] = cn[j];
@@ -243,7 +271,7 @@ class WorkingMeshClient extends Mesh
       currentLODStartPositionBits += numVertices + offsetIntoSplitBits;
       currentLODStartPositionVert += numExpanded*3;
       currentLODWave--;
-      if ( DEBUG && DEBUG_MODE >= VERBOSE )
+      if ( DEBUG && DEBUG_MODE >= LOW )
       {
         print("Debug " + numVertices + " " + offsetIntoSplitBits + " " + countExpandable + "\n");
         print("One level of expansion. New vertex count " + nv + ". New start position " + currentLODStartPositionBits + "\n");
@@ -268,6 +296,7 @@ class WorkingMeshClient extends Mesh
     }
     while (currentLODStartPositionBits != expansionBits.length)
     {
+      g_pos = currentLODStartPositionBits + nv;
       int countExpandable = 0;
       int [] cornerForVertex = new int[nv];
       for (int i = 0; i < nv; i++)
@@ -296,7 +325,7 @@ class WorkingMeshClient extends Mesh
         if ( expansionBits[currentLODStartPositionBits+i] )
         {
           int[] cn = getCornerNumbers(expansionBits, currentLODStartPositionBits+nv+offsetIntoSplitBits, cornerForVertex[i]);
-          offsetIntoSplitBits += getValence(cornerForVertex[i]);
+          offsetIntoSplitBits += m_countSplitBits;
           for ( int j = 0; j < 3; j++ )
           {
             corners[currentExpandableCount++] = cn[j];
@@ -343,7 +372,7 @@ class WorkingMeshClient extends Mesh
     {
       print("Stiching using corners " + ct[0] + " " + ct[1] + " " + ct[2] + " " + currentOrderV + "\n");
     }
-    if ( DEBUG && DEBUG_MODE >= LOW )
+    if ( DEBUG && DEBUG_MODE >= VERBOSE )
     {
       int orderT1 = m_orderT[t(ct[0])];
       int orderT2 = m_orderT[t(ct[1])];

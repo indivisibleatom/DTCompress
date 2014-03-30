@@ -346,15 +346,17 @@ class WorkingMesh extends Mesh
       {
         numSplitEdges++;
         splitArray[sizeSplitBitsArray+count] = true;
+        //print((sizeSplitBitsArray + count) + " ");
       }
       else
       {
         splitArray[sizeSplitBitsArray+count] = false;
       }
-      currentCorner = s(currentCorner);
       count++;
-    } 
-    while (currentCorner != corner);
+      currentCorner = s(currentCorner);
+    }
+    while (currentCorner != corner && numSplitEdges != 3);
+    //print("\n");
     if (DEBUG && DEBUG_MODE >= LOW)
     {
       if ( numSplitEdges != 3 )
@@ -390,6 +392,7 @@ class WorkingMesh extends Mesh
     pt[] expandVertices;
     int numExpandable;
     int totalBits = 0;
+    int totalBitsChoose = 0;
     while (currentLODWave >= 0)
     {
       numExpandable = 0;
@@ -433,11 +436,15 @@ class WorkingMesh extends Mesh
       {
         m_expandBits.add(expandArray[i]);
         totalBits++;
+        totalBitsChoose++;
         if ( expandArray[i] )
         {
-          sizeSplitBitsArray += populateSplitBitsArray(splitBitsArray, currentLODWave, cornerForVertex[i], corners, sizeCornersArray, sizeSplitBitsArray);
-          totalBits += getValence(cornerForVertex[i]);
+          int count = populateSplitBitsArray(splitBitsArray, currentLODWave, cornerForVertex[i], corners, sizeCornersArray, sizeSplitBitsArray);
+          sizeSplitBitsArray += count;
+          totalBits += count;
           sizeCornersArray += 3;
+          int valence = getValence(i);
+          totalBitsChoose += ((log((valence * (valence - 1) * (valence - 2))/6)/log(2)) + 0.5);
         }
       }
 
@@ -466,18 +473,69 @@ class WorkingMesh extends Mesh
       print("Expanded one level. New number of vertices " + nv + "\n");
     }
     print("Total bits per vertex " + totalBits + " " + (float)totalBits/g_totalVertices + "\n");
+    print("Total bits per choose " + totalBitsChoose + " " + (float)totalBitsChoose/g_totalVertices + "\n");
   }
   
-  private void markAllSurrounding( boolean[] newInRegion, boolean[] inRegion, int corner )
+  private void markAllSurrounding( ArrayList<Integer> inRegionCornersNew, ArrayList<Integer> inRegionCornersOld, boolean[] markedCorners )
   {
-    int currentCorner = corner;
-    do
+    for (int corner:inRegionCornersOld)
     {
-      newInRegion[v(n(currentCorner))] = true;
-      currentCorner = s(currentCorner);
-    }while(currentCorner != corner);
+      int currentCorner = corner;
+      do
+      {
+        if ( !markedCorners[currentCorner] )
+        {
+          inRegionCornersNew.add( currentCorner );
+          markedCorners[corner] = true;
+        }
+        currentCorner = s(currentCorner);
+      }while(currentCorner != corner);
+    }
   }
   
+  private ArrayList<Integer> expandInRegion( ArrayList<Integer> inRegionCorners, int numRings )
+  {
+    ArrayList<Integer> newInRegionCorners = null;
+    ArrayList<Integer> inRegionCornersCurrent = inRegionCorners;
+    ArrayList<Integer> inRegionCornersOld = null;
+    boolean[] markedCorners = new boolean[nc]; 
+    for (int i = 0; i < numRings; i++)
+    {
+      if ( i % 2 == 0 )
+      {
+        newInRegionCorners = new ArrayList<Integer>();
+        inRegionCornersCurrent = newInRegionCorners;
+        inRegionCornersOld = inRegionCorners;
+      }
+      else
+      {
+        inRegionCorners = new ArrayList<Integer>();
+        inRegionCornersCurrent = inRegionCorners;
+        inRegionCornersOld = newInRegionCorners;
+      }
+      for (int j:inRegionCornersOld)
+      {
+        markedCorners[j] = true;
+        inRegionCornersCurrent.add(j);
+      }
+      for (int j:inRegionCornersOld)
+      {
+        markAllSurrounding(inRegionCornersCurrent, inRegionCornersOld, markedCorners);
+      }
+    }
+    return inRegionCornersCurrent;
+  }
+  
+  private boolean[] getRegionArray( ArrayList<Integer> regionCorners )
+  {
+    boolean[] regionArray = new boolean[nv];
+    for (int i:regionCorners)
+    {
+      regionArray[v(i)] = true;
+    }
+    return regionArray;
+  }
+   
   private void expandInRegion( boolean[] inRegion, int numRings )
   {
     boolean[] newInRegion = new boolean[nv];
@@ -491,7 +549,7 @@ class WorkingMesh extends Mesh
       {
         if (inRegion[v(j)])
         {
-          markAllSurrounding(newInRegion, inRegion, j);
+          //markAllSurrounding(newInRegion, inRegion, j);
         }
       }
       for (int j = 0; j < nv; j++)
@@ -505,11 +563,11 @@ class WorkingMesh extends Mesh
   {
     float r2 = g_roiSize;
     pt centerSphere = P(G[v(corner)]);
-    boolean[] inRegion = new boolean[nv];
 
-    inRegion[v(corner)] = true;
-    expandInRegion( inRegion, 5 );
-    setRegion(inRegion);
+    ArrayList<Integer> inRegion = new ArrayList<Integer>();
+    inRegion.add( corner );
+    ArrayList<Integer> expandedRegion = expandInRegion( inRegion, 5 );
+    setRegion(getRegionArray(inRegion));
   }
   
   void expandRegion(int corner)
@@ -608,8 +666,9 @@ class WorkingMesh extends Mesh
           totalBits++;
           if ( expandArray[i] )
           {
-            sizeSplitBitsArray += populateSplitBitsArray(splitBitsArray, currentLODWave, cornerForVertex[i], corners, sizeCornersArray, sizeSplitBitsArray);
-            totalBits += getValence(cornerForVertex[i]);
+            int count = populateSplitBitsArray(splitBitsArray, currentLODWave, cornerForVertex[i], corners, sizeCornersArray, sizeSplitBitsArray);
+            sizeSplitBitsArray += count;
+            totalBits += count;
             sizeCornersArray += 3;
           }
         }
@@ -721,8 +780,9 @@ class WorkingMesh extends Mesh
           totalBits++;
           if ( expandArray[i] )
           {
-            sizeSplitBitsArray += populateSplitBitsArray(splitBitsArray, currentLODWave, cornerForVertex[i], corners, sizeCornersArray, sizeSplitBitsArray);
-            totalBits += getValence(cornerForVertex[i]);
+            int count = populateSplitBitsArray(splitBitsArray, currentLODWave, cornerForVertex[i], corners, sizeCornersArray, sizeSplitBitsArray);
+            sizeSplitBitsArray += count;
+            totalBits += count;
             sizeCornersArray += 3;
           }
         }

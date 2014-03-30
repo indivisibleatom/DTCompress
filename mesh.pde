@@ -263,6 +263,7 @@ class Mesh {
     void updateON() {
     computeO(); 
     normals();
+    //printStats();
   } // recomputes O and normals
 
     // ============================================= CORNER OPERATORS =======================================
@@ -641,7 +642,10 @@ class Mesh {
   void computeO() {
     int val[] = new int [nv]; 
     for (int v=0; v<nv; v++) val[v]=0;  
-    for (int c=0; c<nc; c++) val[v(c)]++;   //  valences
+    for (int c=0; c<nc; c++)
+    {
+      val[v(c)]++;   //  valences
+    }
     int fic[] = new int [nv]; 
     int rfic=0; 
     for (int v=0; v<nv; v++) {
@@ -675,7 +679,7 @@ class Mesh {
       fic[v]=rfic; 
       rfic+=val[v];
     };  // head of list of incident corners
-    for (int v=0; v<nv; v++) val[v]=0;   // valences wil be reused to track how many incident corners were encountered for each vertex
+    for (int v=0; v<nv; v++) val[v]=0;   // valences wil be reused to track how many incident corners were en`ered for each vertex
     int [] C = new int [nc]; 
     for (int c=0; c<nc; c++) if (visible[t(c)]) C[fic[v(c)]+val[v(c)]++]=c;  // for each vertex: the list of val[v] incident corners starts at C[fic[v]]
     for (int c=0; c<nc; c++) O[c]=c;    // init O table to -1 meaning that a corner has no opposite (i.e. faces a border)
@@ -701,6 +705,18 @@ class Mesh {
       valence++;
       currentCorner = s(currentCorner);
     } while ( currentCorner != corner );
+    return valence;
+  }
+
+  public int getValenceBounded(int corner)
+  {
+    int currentCorner = corner;
+    int valence = 0;
+    do 
+    {
+      valence++;
+      currentCorner = s(currentCorner);
+    } while ( currentCorner != corner && valence < 100 );
     return valence;
   }
   
@@ -1691,6 +1707,16 @@ class Mesh {
     saveStrings(fn, inppts);
   };
 
+  void loadMeshVTS(int scale) {
+    String loadPath = selectInput("Select .vts mesh file to load");  // Opens file chooser
+    if (loadPath == null) {
+      println("No input file was selected..."); 
+      return;
+    }
+    else println("reading from "+loadPath); 
+    loadMeshVTS(loadPath, scale);
+  }
+
   void loadMeshVTS() {
     String loadPath = selectInput("Select .vts mesh file to load");  // Opens file chooser
     if (loadPath == null) {
@@ -1698,10 +1724,69 @@ class Mesh {
       return;
     }
     else println("reading from "+loadPath); 
-    loadMeshVTS(loadPath);
+    loadMeshVTS(loadPath, 1);
   }
 
-  void loadMeshVTS(String fn) {
+  private void printStats()
+  {
+    int numIsland = 0;
+    int numChannel = 0;
+    int numOthers = 0;
+    
+    //Print information about the valence of each vertex
+    for (int i = 0; i < nv; i++)
+    {
+      vm[i] = 0;
+    }
+
+    float averageValence = 0;
+    int maxValence = 0;
+    int totalValence = 0;
+    for (int i = 0; i < nc; i++)
+    {
+      //print(v(i) + " i " + i + " ");
+      if (vm[v(i)] == 0)
+      {
+        vm[v(i)] = 1;
+        int valence = getValence(i);
+        totalValence += valence;
+        if ( valence > maxValence )
+        {
+          maxValence = valence;
+        }
+      }
+    }
+    averageValence = (float)totalValence / nv;
+    print("Max valence " + maxValence + "\n");
+    
+    /*for (int i = 0; i < nv; i++)
+    {
+      vm[i] = 0;
+    }
+    int[] valenceBin = new int[maxValence+1];
+    for (int i = 0; i < maxValence+1; i++)
+    {
+      valenceBin[i] = 0;
+    }
+    for (int i = 0; i < nc; i++)
+    {
+      if (vm[v(i)] == 0)
+      {
+        vm[v(i)] = 1;
+        int valence = getValence(i);
+        valenceBin[valence]++;
+      }      
+    }
+    
+    print("Stats num vertices " + nv + " num triangles " + nt + " islands " + numIsland + " channels " + numChannel + " others " + numOthers + " average valence " + averageValence + " max valence " + maxValence + "\n");
+    for (int i = 0; i < maxValence+1; i++)
+    {
+      print("Valence" + i + " " + valenceBin[i] + " " + ((float)valenceBin[i]/nv) * 100 + "\n");
+    }
+    resetMarkers(); */
+  }
+
+  void loadMeshVTS(String fn, int scale) {
     println("loading: "+fn); 
     String [] ss = loadStrings(fn);
     String subpts;
@@ -1719,7 +1804,12 @@ class Mesh {
       comma2=rest.indexOf(',');    
       y=float(rest.substring(0, comma2)); 
       z=float(rest.substring(comma2+1, rest.length()));
-      G[k].set(x, y, z);
+      //G[k].set(x, y, z);
+      G[k].set(x * scale, y * scale, z * scale);
+      if (k == nv-1)
+      {
+        print(x + " " + y + " " + z + "\n");
+      }
     };
     s=nv+1;
     nt = int(ss[s]); 
@@ -1737,6 +1827,9 @@ class Mesh {
       V[3*k]=a;  
       V[3*k+1]=b;  
       V[3*k+2]=c;
+      //V[3*k]=a-1;  
+      //V[3*k+1]=b-1;  
+      //V[3*k+2]=c-1;
     }
   };
 

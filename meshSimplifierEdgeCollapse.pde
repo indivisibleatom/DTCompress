@@ -225,6 +225,9 @@ class MeshSimplifierEdgeCollapse
           int o = m_simplifiedMesh.o(c);
           int lMain = m_mesh.l(m_mesh.c(i));
           int rMain = m_mesh.r(m_mesh.c(i));
+          int other = m_mesh.s(m_mesh.s(m_mesh.c(i)));
+          int offsetOther = other%3;
+          int valenceBefore = m_simplifiedMesh.getValenceBounded(3*m_tMappingMeshTToSimplifiedT[other/3] + offsetOther);
           
           if (m_simplifiedMesh.tm[simplifiedT] != ISLAND)
           {
@@ -257,6 +260,11 @@ class MeshSimplifierEdgeCollapse
           m_vertexToTriagleMappingBaseToMain[commonVertexIndex][1] = m_mesh.t(m_mesh.u(m_mesh.c(i)));
           m_vertexToTriagleMappingBaseToMain[commonVertexIndex][2] = m_mesh.t(m_mesh.u(m_mesh.n(m_mesh.c(i))));
           m_vertexToTriagleMappingBaseToMain[commonVertexIndex][3] = m_mesh.t(m_mesh.u(m_mesh.p(m_mesh.c(i))));
+          int valenceAfter = m_simplifiedMesh.getValenceBounded(3*m_tMappingMeshTToSimplifiedT[other/3] + offsetOther);
+          if ( valenceAfter >= 36 )
+          {
+            print("Valence after collapse " + i + " " + valenceBefore + " " + m_mesh.v(other) + " " + m_simplifiedMesh.getValenceBounded(3*m_tMappingMeshTToSimplifiedT[other/3] + offsetOther) + "\n");
+          }
        }
     }
 
@@ -328,7 +336,8 @@ class MeshSimplifierEdgeCollapse
     m_succLODMapperManager.getActiveLODMapper().setBaseToRefinedTMap(m_tMappingSimplifiedTToMeshT);
     m_succLODMapperManager.getActiveLODMapper().setBaseVToRefinedTMap(m_vertexToTriagleMappingBaseToMain);
     print("Num vertices " + m_simplifiedMesh.nv + " Num triangles " + m_simplifiedMesh.nt + "\n");
-    print("Starting simplification \n");
+    print("End simplification \n");
+    m_simplifiedMesh.printStats();
     return m_simplifiedMesh;
   }
 }
