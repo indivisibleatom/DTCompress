@@ -607,6 +607,7 @@ class WorkingMesh extends Mesh
     pt[] expandVertices;
     int numExpandable;
     int totalBits = 0;
+    int totalBitsChoose = 0;
     boolean[] inRegion;
     m_expandVertices.clear();
     m_expandBits.clear();
@@ -627,9 +628,9 @@ class WorkingMesh extends Mesh
           inRegion[i] = true;
         }
       }
-      /*if ( currentLODWave == NUMLODS - 1 )
+      if ( currentLODWave == NUMLODS - 1 )
       {
-        expandInRegion( inRegion, 5 );
+        expandInRegion( inRegion, 6 );
         for (int i = 0; i < nv; i++)
         {
           if ( inRegion[i] == true )
@@ -637,7 +638,7 @@ class WorkingMesh extends Mesh
             m_descendedFrom[i] = vertexToExpand;
           }
         }
-      }*/
+      }
 
       if ( currentLODWave > 0 )
       {
@@ -687,10 +688,13 @@ class WorkingMesh extends Mesh
         {
           m_expandBits.add(expandArray[i]);
           totalBits++;
+          totalBitsChoose++;
           if ( expandArray[i] )
           {
             sizeSplitBitsArray += populateSplitBitsArray(splitBitsArray, currentLODWave, cornerForVertex[i], corners, sizeCornersArray, sizeSplitBitsArray);
-            totalBits += getValence(cornerForVertex[i]);
+            int valence = getValence(cornerForVertex[i]); 
+            totalBits += valence;
+            totalBitsChoose += ceil((log((valence * (valence - 1) * (valence - 2))/6)/log(2)));
             sizeCornersArray += 3;
           }
         }
@@ -730,6 +734,7 @@ class WorkingMesh extends Mesh
     }
     print("Total number of fully vertices added " + m_expandVertices.size() + "\n");
     print("Total bits per fully expanded vertices " + totalBits + " " + countVerticesComplete + " " + (float)totalBits/countVerticesComplete + "\n");
+    print("Total bits per fully expanded vertices choose " + totalBitsChoose + " " + countVerticesComplete + " " + (float)totalBitsChoose/countVerticesComplete + "\n");
   }
   
   /*void expandRegion(int corner)

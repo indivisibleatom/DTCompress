@@ -27,7 +27,7 @@ class SimplificationController
     m_lodMapperManager = new SuccLODMapperManager();
     m_baseMesh = null;
     m_islandMesh.declareVectors();  
-    m_islandMesh.loadMeshVTS("data/horse.vts", 1);
+    m_islandMesh.loadMeshVTS("data/bigHorse.vts", 1);
     //m_islandMesh.loadMeshVTS("data/new.vts", 10000);
     g_totalVertices = m_islandMesh.nv;
     checkCorrect();
