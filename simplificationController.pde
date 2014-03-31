@@ -109,6 +109,7 @@ class SimplificationController
       {
         IslandCreator islandCreator = new IslandCreator(m_islandMesh, (int) random(m_islandMesh.nt * 3));
         islandCreator.createIslands("heuristic");
+        //islandCreator.createIslands("regionGrow");
         MeshSimplifierEdgeCollapse simplifier = new MeshSimplifierEdgeCollapse( m_islandMesh, m_lodMapperManager );
         m_baseMesh = simplifier.simplify(); 
         m_baseMesh.computeBox(); 

@@ -393,6 +393,7 @@ class WorkingMesh extends Mesh
     int numExpandable;
     int totalBits = 0;
     int totalBitsChoose = 0;
+    int totalBitsNothing = 0;
     while (currentLODWave >= 0)
     {
       numExpandable = 0;
@@ -437,6 +438,7 @@ class WorkingMesh extends Mesh
         m_expandBits.add(expandArray[i]);
         totalBits++;
         totalBitsChoose++;
+        totalBitsNothing++;
         if ( expandArray[i] )
         {
           int count = populateSplitBitsArray(splitBitsArray, currentLODWave, cornerForVertex[i], corners, sizeCornersArray, sizeSplitBitsArray);
@@ -444,7 +446,8 @@ class WorkingMesh extends Mesh
           totalBits += count;
           sizeCornersArray += 3;
           int valence = getValence(i);
-          totalBitsChoose += ((log((valence * (valence - 1) * (valence - 2))/6)/log(2)) + 0.5);
+          totalBitsChoose += ceil((log((valence * (valence - 1) * (valence - 2))/6)/log(2)));
+          totalBitsNothing += valence;
         }
       }
 
@@ -472,6 +475,7 @@ class WorkingMesh extends Mesh
       print("Debug " + numVertices + " " + sizeSplitBitsArray + "\n");
       print("Expanded one level. New number of vertices " + nv + "\n");
     }
+    print("Total bits per vertex " + totalBitsNothing + " " + (float)totalBitsNothing/g_totalVertices + "\n");
     print("Total bits per vertex " + totalBits + " " + (float)totalBits/g_totalVertices + "\n");
     print("Total bits per choose " + totalBitsChoose + " " + (float)totalBitsChoose/g_totalVertices + "\n");
   }

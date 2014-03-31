@@ -281,10 +281,10 @@ class IslandCreator
       netValence += nonChannel;
       currentCorner = m_mesh.n(currentCorner);
     } while(currentCorner != corner);
-    if ( netValence >= 25 )
+    /*if ( netValence >= 25 )
     {
       return false;
-    }
+    }*/
     return true;
   }
   
@@ -534,7 +534,7 @@ class IslandCreator
     numCreatedInit = internalCreateIslandsPass0();
     int startFifoSize = m_cornerFifo.size();
     int numCreated = numCreatedInit;
-    for (int i = 0; i < LOD*100 ; i++)
+    for (int i = 0; i < 1/*LOD*100*/ ; i++)
     {
       int currentFifoSize =  m_cornerFifo.size();
       for (int j = startFifoSize; j < currentFifoSize; j++)

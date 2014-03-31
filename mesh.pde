@@ -40,7 +40,8 @@ class Mesh {
   //  ==================================== Internal variables ====================================
   // max sizes, counts, selected corners
   //5500
-  int maxnv = 550000;                         //  max number of vertices
+  //int maxnv = 50000;                         //  max number of vertices
+  int maxnv = 50000;                         //  max number of vertices
   int maxnt = maxnv*2;                       // max number of triangles
   int nv = 0;                              // current  number of vertices
   int nt = 0;                   // current number of triangles
