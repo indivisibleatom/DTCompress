@@ -129,7 +129,6 @@ class TetMesh implements IMesh{
     int v1 = m_V[4*t+a];
     int v2 = m_V[4*t+b];
     int v3 = m_V[4*t+c];
-    stroke(black);
     
     beginShape(TRIANGLES);
     vertex(m_G[v1].x, m_G[v1].y, m_G[v1].z);
@@ -145,6 +144,8 @@ class TetMesh implements IMesh{
   
   void draw()
   {
+    translate(0,0,-2);
+    stroke(black);
     for (int i = 0; i < m_nt; i++)
     {
       showTriangle(i,0,1,2);
@@ -152,7 +153,16 @@ class TetMesh implements IMesh{
       showTriangle(i,2,3,0);
       showTriangle(i,3,0,1);
     }
-    translate(0,0,10);
+    translate(0,0,2);
+    strokeWeight(5);
+    stroke(red);
+    for (int i = 0; i < m_nt; i++)
+    {
+      showTriangle(i,0,1,2);
+      showTriangle(i,1,2,3);
+      showTriangle(i,2,3,0);
+      showTriangle(i,3,0,1);
+    }
   }
   
   //Wedge
