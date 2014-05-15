@@ -1708,7 +1708,7 @@ class Mesh {
     saveStrings(fn, inppts);
   };
 
-  void loadMeshVTS(int scale) {
+  void VTS(int scale) {
     String loadPath = selectInput("Select .vts mesh file to load");  // Opens file chooser
     if (loadPath == null) {
       println("No input file was selected..."); 
