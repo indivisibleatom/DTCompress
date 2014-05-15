@@ -49,12 +49,12 @@ class Viewport
     m_fSelected = false;
   }
 
-  void registerMesh(Mesh m)
+  void registerMesh(IMesh m)
   {
     if ( m_meshInteractor.addMesh(m) == 1 )
     {
       initView();
-      F.set(m.Cbox);
+      F.set(m.getBox());
     }
     m.setViewport(this);
   }
@@ -67,7 +67,7 @@ class Viewport
 
   void onMousePressed()
   {
-    Mesh selectedMesh = m_meshInteractor.getSelectedMesh();
+    IMesh selectedMesh = m_meshInteractor.getSelectedMesh();
     if (selectedMesh != null)
     {
       selectedMesh.onMousePressed();
@@ -76,7 +76,7 @@ class Viewport
 
   void onMouseMoved()
   {
-    Mesh selectedMesh = m_meshInteractor.getSelectedMesh();
+    IMesh selectedMesh = m_meshInteractor.getSelectedMesh();
     if (selectedMesh != null)
     {
       selectedMesh.onMouseMoved();
@@ -85,11 +85,12 @@ class Viewport
 
   void onMouseDragged()
   {
-    Mesh selectedMesh = m_meshInteractor.getSelectedMesh();
+    IMesh selectedMesh = m_meshInteractor.getSelectedMesh();
     selectedMesh.onMouseDragged();
     if (selectedMesh != null)
     {
-      if (keyPressed&&key=='w') {
+      //TODO msati3: Add this functionality back
+      /*if (keyPressed&&key=='w') {
         selectedMesh.add(float(mouseX-pmouseX), I).add(-float(mouseY-pmouseY), J);
       } // move selected vertex in screen plane
       if (keyPressed&&key=='x') {
@@ -100,7 +101,7 @@ class Viewport
       } // move selected vertex in screen plane
       if (keyPressed&&key=='X') {
         selectedMesh.addROI(float(mouseX-pmouseX), I).addROI(float(mouseY-pmouseY), K);
-      }  // move selected vertex in X/Z screen plane 
+      }  // move selected vertex in X/Z screen plane */
 
       //Rotate viewport's view
       if (!keyPressed) {
@@ -133,7 +134,7 @@ class Viewport
 
   void onKeyPressed()
   {
-    Mesh M = m_meshInteractor.getSelectedMesh();
+    IMesh M = m_meshInteractor.getSelectedMesh();
     if ( M == null )
     {
       if (DEBUG && DEBUG_MODE >= LOW)
@@ -143,42 +144,12 @@ class Viewport
       return;
     }  
     // camera focus set 
-    if (key=='^') F.set(M.g()); // to picked corner
-    if (key==']') F.set(M.Cbox);  // center of minimax box
+    //if (key=='^') F.set(M.g()); // to picked corner //TODO msati3: Add this back
+    if (key==']') F.set(M.getBox());  // center of minimax box
     if (key==';') {
       initView(); 
-      F.set(M.Cbox);
+      F.set(M.getBox());
     } // reset the view
-
-
-    //archival
-    if (key=='K') {
-      M.saveMeshVTS();
-    }
-    if (key=='l') {
-      Mesh m = new Mesh();
-      m.loadMeshOBJ(); // M.loadMesh(); 
-      m.updateON();   
-      m.resetMarkers();
-      m.computeBox();
-      for (int i=0; i<20; i++) vis[i]=true;
-      registerMesh(m);
-    }
-    if (key=='M') {
-      Mesh m = new Mesh();
-      m.loadMeshVTS(); 
-      m.updateON();   
-      m.resetMarkers();
-      m.computeBox();
-      for (int i=0; i<20; i++) vis[i]=true;
-      registerMesh(m);
-    }
-    if (key=='?') {
-      showHelpText=!showHelpText;
-    } 
-    //if(key=='V') {sE.set(E); sF.set(F); sU.set(U);}
-    //if(key=='v') {E.set(sE); F.set(sF); U.set(sU);}
-    //if(key=='m') {m=(m+1)%MM.length; M=MM[m];};  
     M.onKeyPressed();
   }
 
@@ -219,14 +190,15 @@ class Viewport
       stroke(blue);
       rect(0, 0, width, height);
 
-      Mesh selectedMesh = m_meshInteractor.getSelectedMesh();
+      //TODO msati3: Enable
+      /*IMesh selectedMesh = m_meshInteractor.getSelectedMesh();
       if (selectedMesh != null)
       {
         stroke(green);
         fill(green); 
         scribe("Surface = "+nf(selectedMesh.surf, 1, 1)+", Volume = "+nf(selectedMesh.vol, 1, 0), 0); 
         scribeHeaderRight("Mesh "+str(m_meshInteractor.getSelectedMeshIndex()));
-      }
+      }*/
     }
 
     hint(ENABLE_DEPTH_TEST); // show silouettes
@@ -234,7 +206,7 @@ class Viewport
 
   private void interactSelectedMesh()
   {
-    Mesh selectedMesh = m_meshInteractor.getSelectedMesh();
+    IMesh selectedMesh = m_meshInteractor.getSelectedMesh();
     if ( selectedMesh == null )
     {
       if (DEBUG && DEBUG_MODE >= LOW)

@@ -13,8 +13,16 @@ class SimplificationController
   private ArrayList<Mesh> m_displayMeshes;
   int m_minMesh;
   int m_maxMesh;
-
+  
   SimplificationController()
+  {
+    g_t.loadMeshVts("tetTry.vts");
+    m_viewportManager = new ViewportManager();
+    m_viewportManager.addViewport( new Viewport( 0, 0, width, height ) );
+    m_viewportManager.registerMeshToViewport(g_t, 0);
+  }
+
+  /*SimplificationController()
   {
     m_viewportManager = new ViewportManager();
     for ( int i = 0; i < c_numMeshes; i++ )
@@ -41,7 +49,7 @@ class SimplificationController
     //m_displayMeshes.add(m_islandMesh);
     //m_viewportManager.registerMeshToViewport( m_islandMesh, 0 );
     for (int i=0; i<20; i++) vis[i]=true; // to show all types of triangles
-  }
+  }*/
 
   void checkCorrect()
   {

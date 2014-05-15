@@ -58,7 +58,7 @@ class ViewportManager
     m_viewports.get(m_selectedViewport).onSelected();
   }
   
-  void registerMeshToViewport( Mesh m, int viewportIndex )
+  void registerMeshToViewport( IMesh m, int viewportIndex )
   {
     m_viewports.get(viewportIndex).registerMesh(m);
   }

@@ -6,13 +6,17 @@ int x4(int num){ return num<<2; }
 int m4(int num){ return num & 0x3; }
 boolean even(int num) { return ((num & 0x1) == 0); }
 
-class TetMesh {
+class TetMesh implements IMesh{
   pt[] m_G;
   int[] m_V;
   int[] m_O;
   int m_nv;
   int m_nt;
   int m_nc;
+  Viewport m_viewport;
+  pt m_cbox = new pt(width/2, height/2, 0);
+  float m_rbox=1000;
+  protected TetMeshUserInputHandler m_userInputHandler;
   
   TetMesh(int maxV, int maxT)
   {
@@ -22,6 +26,7 @@ class TetMesh {
     m_nv = 0;
     m_nt = 0;
     m_nc = 0;
+    m_userInputHandler = new TetMeshUserInputHandler(this);
   }
   
   //Operators
@@ -59,7 +64,7 @@ class TetMesh {
     s=m_nv+1;
     int numFaces = int(ss[s]); 
     int nc=3*numFaces;
-    println(", nf="+numFaces);
+    print(", nf="+numFaces);
     s++;
     int[] triV = new int[3*numFaces];
     for (int k=0; k<numFaces; k++) {
@@ -83,46 +88,59 @@ class TetMesh {
     for (int k=0; k<m_nt; k++) {
       int i=k+s;
       comma1=ss[i].indexOf(',');   
-      a=int(ss[i].substring(0, comma1));  
+      a=int(ss[i].substring(0, comma1)) - 1;  
       String rest = ss[i].substring(comma1+1, ss[i].length()); 
       comma2=rest.indexOf(',');  
-      b=int(rest.substring(0, comma2)); 
-      comma3=rest.indexOf(',');   
-      c=int(rest.substring(0, comma3));
-      d=int(rest.substring(comma3+1, rest.length()));
-      triV[4*k]=findCommon(triV, a, b, c);  
-      triV[4*k+1]=findCommon(triV, b, c, d);
-      triV[4*k+2]=findCommon(triV, c, d, a);
-      triV[4*k+3]=findCommon(triV, d, a, b);
+      b=int(rest.substring(0, comma2)) - 1; 
+      rest = rest.substring(comma2+1, rest.length()); 
+      comma3=rest.indexOf(',');
+      c=int(rest.substring(0, comma3)) - 1;
+      d=int(rest.substring(comma3+1, rest.length())) - 1;
+      m_V[4*k]=a;  
+      m_V[4*k+1]=b;
+      m_V[4*k+2]=c;
+      m_V[4*k+3]=d;
     }
+    computeBox();
   }
   
-  private int findCommon(int []triV, int a, int b, int c)
+  pt getBox()
   {
-    int[] vertices1 = {triV[3*a], triV[3*a+1], triV[3*a+2]};
-    int[] vertices2 = {triV[3*b], triV[3*b+1], triV[3*b+2]};
-    int[] vertices3 = {triV[3*c], triV[3*c+1], triV[3*c+2]};
-    for (int i = 0; i < 3; i++)
-      for (int j = 0; j < 3; j++)
-        for (int k = 0; k < 3; k++)
-        {
-          if (vertices1[i] == vertices2[j] && vertices1[i] == vertices3[k])
-            return vertices1[i];
-        }
-    return -1;
+    return m_cbox;
   }
+  
+  void computeBox() { // computes center Cbox and half-diagonal Rbox of minimax box
+    pt Lbox =  P(m_G[0]);  
+    pt Hbox =  P(m_G[0]);
+    for (int i=1; i<m_nv; i++) { 
+      Lbox.x=min(Lbox.x, m_G[i].x); 
+      Lbox.y=min(Lbox.y, m_G[i].y); 
+      Lbox.z=min(Lbox.z, m_G[i].z);
+      Hbox.x=max(Hbox.x, m_G[i].x); 
+      Hbox.y=max(Hbox.y, m_G[i].y); 
+      Hbox.z=max(Hbox.z, m_G[i].z);
+    };
+    m_cbox.set(P(Lbox, Hbox));  
+    m_rbox=d(m_cbox, Hbox);
+  };
   
   void showTriangle(int t, int a, int b, int c)
   {
     int v1 = m_V[4*t+a];
     int v2 = m_V[4*t+b];
     int v3 = m_V[4*t+c];
+    stroke(black);
     
     beginShape(TRIANGLES);
     vertex(m_G[v1].x, m_G[v1].y, m_G[v1].z);
     vertex(m_G[v2].x, m_G[v2].y, m_G[v2].z);
     vertex(m_G[v3].x, m_G[v3].y, m_G[v3].z);
     endShape();
+  }
+  
+  //Interaction of mesh class with outside objects. TODO msati3: Better ways of handling this?
+  void setViewport(Viewport viewport) {
+    m_viewport = viewport;
   }
   
   void draw()
@@ -134,6 +152,7 @@ class TetMesh {
       showTriangle(i,2,3,0);
       showTriangle(i,3,0,1);
     }
+    translate(0,0,10);
   }
   
   //Wedge
@@ -178,6 +197,30 @@ class TetMesh {
     Wedge f(Wedge w) { return o(m(w)); }
     Wedge sl(Wedge w) { return n(l(w)); }
     Wedge sr(Wedge w) { return p(r(w)); }
+  }
+
+  void onKeyPressed() {
+    m_userInputHandler.onKeyPress();
+  }
+
+  void onMousePressed() {
+    m_userInputHandler.onMousePressed();
+  }
+  
+  void onMouseDragged() {
+    m_userInputHandler.onMouseDragged();
+  }
+  
+  void onMouseMoved() {
+    m_userInputHandler.onMouseMoved();
+  }
+
+  void interactSelectedMesh()
+  {
+  }
+  
+  void drawPostPicking()
+  {
   }
 }
 

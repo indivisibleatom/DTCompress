@@ -9,6 +9,19 @@ int fniMax=fn.length; // file names for loading meshes
 Boolean [] vis = new Boolean [20]; 
 Boolean onTriangles=true, onEdges=true; // projection control
 
+interface IMesh
+{
+  void setViewport( Viewport viewport );
+  void draw();
+  pt getBox();
+  void onKeyPressed();
+  void onMousePressed();  
+  void onMouseDragged();
+  void onMouseMoved();
+  void interactSelectedMesh();
+  void drawPostPicking();
+}
+
 class DrawingState
 {
   public boolean m_fShowEdges;
@@ -36,7 +49,7 @@ class DrawingState
 };
 
 //========================== class MESH ===============================
-class Mesh {
+class Mesh implements IMesh {
   //  ==================================== Internal variables ====================================
   // max sizes, counts, selected corners
   //5500
@@ -1000,6 +1013,11 @@ class Mesh {
   void initDisplayList()
   {
     showTriangles(true, 255, m_drawingState.m_shrunk);
+  }
+  
+  pt getBox()
+  {
+    return Cbox;
   }
 
   // ********************************************************* DRAW *****************************************************

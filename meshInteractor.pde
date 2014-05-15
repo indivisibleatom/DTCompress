@@ -1,16 +1,16 @@
 //Allows for selecting a particular mesh being displayed and performing operations on it
 class MeshInteractor
 {
-  private ArrayList<Mesh> m_meshes;
+  private ArrayList<IMesh> m_meshes;
   private int m_selectedMesh;
   
   MeshInteractor()
   {
-    m_meshes = new ArrayList<Mesh>();
+    m_meshes = new ArrayList<IMesh>();
     m_selectedMesh = -1;
   } 
   
-  int addMesh(Mesh m)
+  int addMesh(IMesh m)
   {
     m_meshes.add(m);
     if ( m_selectedMesh == -1 )
@@ -69,7 +69,7 @@ class MeshInteractor
     return m_selectedMesh;
   }
 
-  Mesh getSelectedMesh()
+  IMesh getSelectedMesh()
   {
     if (m_selectedMesh == -1)
     {

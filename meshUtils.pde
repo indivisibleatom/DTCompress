@@ -34,6 +34,59 @@ class MeshUtils
  }
 }
 
+class TetMeshUserInputHandler
+{
+  private TetMesh m_mesh;
+  protected boolean m_fKeyEntryMode;
+  protected String m_command;
+
+  
+  TetMeshUserInputHandler(TetMesh m)
+  {
+    m_mesh = m;
+  }
+  
+  public void onMousePressed()
+  {
+  }
+  
+  public void onMouseDragged()
+  {
+  }
+  
+  public void onMouseMoved()
+  {
+  }
+  
+  public void onKeyPress()
+  {   
+    if (key==':')
+    {
+      m_fKeyEntryMode = true;
+      m_command = "";
+    }
+    else if (m_fKeyEntryMode)
+    {
+      if (key == ENTER || key == RETURN)
+      {
+        interpretCommand( m_command );
+        m_fKeyEntryMode = false;
+      }
+      else
+      {
+        m_command += key;
+      }
+    }
+  }
+  
+  public void interpretCommand( String command )
+  {
+    switch( command.charAt(0) )
+    {
+    }
+  }
+}
+
 class MeshUserInputHandler
 {
   private Mesh m_mesh;

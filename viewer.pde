@@ -40,43 +40,41 @@ void setup() {
   pgl = (PGraphicsOpenGL) g;
   gl = pgl.beginGL();  pgl.endGL();
   
-  //g_controller = new SimplificationController(); //The controlling object for the project
-  g_t.loadMeshVts("tetTry.vts");
+  g_controller = new SimplificationController(); //The controlling object for the project
 }
 
 // ******************************************************************************************************************* DRAW      
 void draw() {  
   smooth();
   background(white);
-  g_t.draw();
-  //g_controller.viewportManager().draw();
+  g_controller.viewportManager().draw();
   gl.glColor3i(255,0,0);
  } // end draw
  
  // ****************************************************************************************************************************** INTERRUPTS
 Boolean pressed=false;
 void mousePressed() {
-  //g_controller.viewportManager().onMousePressed();
+  g_controller.viewportManager().onMousePressed();
 }
   
 void mouseDragged() {
-  //g_controller.viewportManager().onMouseDragged();
+  g_controller.viewportManager().onMouseDragged();
 }
   
 void mouseMoved() {
-  //g_controller.viewportManager().onMouseMoved();
+  g_controller.viewportManager().onMouseMoved();
 }
 
 void mouseReleased() {
 }
   
 void keyReleased() {
-   //g_controller.viewportManager().onKeyReleased();
+   g_controller.viewportManager().onKeyReleased();
 } 
 
  
 void keyPressed() {
-   //wg_controller.onKeyPressed();
+   g_controller.onKeyPressed();
 } 
   
 Boolean prev=false;
