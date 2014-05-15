@@ -137,6 +137,44 @@ class TetMesh implements IMesh{
     endShape();
   }
   
+  void showShrunkTet(int t)
+  {
+    int v1 = m_V[4*t];
+    int v2 = m_V[4*t+1];
+    int v3 = m_V[4*t+2];
+    int v4 = m_V[4*t+3];
+    pt[] points = new pt[4];
+    
+    pt p11 = P( m_G[v1], 0.3, m_G[v2] );
+    pt p12 = P( m_G[v1], 0.3, m_G[v3] );
+    pt p13 = P( m_G[v1], 0.3, m_G[v4] );
+    points[0] = P( p11, p12, p13 );
+      
+    pt p21 = P( m_G[v2], 0.3, m_G[v3] );
+    pt p22 = P( m_G[v2], 0.3, m_G[v1] );
+    pt p23 = P( m_G[v2], 0.3, m_G[v4] );
+    points[1] = P( p21, p22, p23 );
+      
+    pt p31 = P( m_G[v3], 0.3, m_G[v1] );
+    pt p32 = P( m_G[v3], 0.3, m_G[v2] );
+    pt p33 = P( m_G[v3], 0.3, m_G[v4] );
+    points[2] = P( p31, p32, p33 );
+    
+    pt p41 = P( m_G[v4], 0.3, m_G[v1] );
+    pt p42 = P( m_G[v4], 0.3, m_G[v2] );
+    pt p43 = P( m_G[v4], 0.3, m_G[v3] );
+    points[3] = P( p41, p42, p43 );
+    
+    for (int i = 0; i < 4; i++)
+    {
+      beginShape(TRIANGLES);
+      vertex(points[i].x, points[i].y, points[i].z);
+      vertex(points[m4(i+1)].x, points[m4(i+1)].y, points[m4(i+1)].z);
+      vertex(points[m4(i+2)].x, points[m4(i+2)].y, points[m4(i+2)].z);
+      endShape();
+    }
+  }
+
   //Interaction of mesh class with outside objects. TODO msati3: Better ways of handling this?
   void setViewport(Viewport viewport) {
     m_viewport = viewport;
@@ -144,7 +182,7 @@ class TetMesh implements IMesh{
   
   void draw()
   {
-    translate(0,0,-2);
+    noFill();
     stroke(black);
     for (int i = 0; i < m_nt; i++)
     {
@@ -153,15 +191,11 @@ class TetMesh implements IMesh{
       showTriangle(i,2,3,0);
       showTriangle(i,3,0,1);
     }
-    translate(0,0,2);
-    strokeWeight(5);
+    fill(red);
     stroke(red);
     for (int i = 0; i < m_nt; i++)
     {
-      showTriangle(i,0,1,2);
-      showTriangle(i,1,2,3);
-      showTriangle(i,2,3,0);
-      showTriangle(i,3,0,1);
+      showShrunkTet(i);
     }
   }
   
