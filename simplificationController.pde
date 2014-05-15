@@ -16,7 +16,7 @@ class SimplificationController
   
   SimplificationController()
   {
-    g_t.loadMeshVts("tetTry.vts");
+    g_t.loadMeshVts("socket.vts");
     m_viewportManager = new ViewportManager();
     m_viewportManager.addViewport( new Viewport( 0, 0, width, height ) );
     m_viewportManager.registerMeshToViewport(g_t, 0);

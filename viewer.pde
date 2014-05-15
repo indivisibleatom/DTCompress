@@ -27,7 +27,7 @@ SimplificationController g_controller;
 float a=0, dx=0, dy=0;   // angle for drawing cutout
 float sd=10; // samp[le distance for cut curve
 pt sE = P(), sF = P(); vec sU=V(); //  view parameters (saved with 'j'*/
-TetMesh g_t = new TetMesh(100,100);
+TetMesh g_t = new TetMesh(1000,5000);
 
 // *******************************************************************************************************************    SETUP
 void setup() {

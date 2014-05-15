@@ -1,5 +1,7 @@
 // CORNER TABLE FOR Tetrahedral Meshes
 
+float c_shrink = 0.5;
+
 //Fast bit operators
 int d4(int num){ return num>>2; }
 int x4(int num){ return num<<2; }
@@ -145,24 +147,24 @@ class TetMesh implements IMesh{
     int v4 = m_V[4*t+3];
     pt[] points = new pt[4];
     
-    pt p11 = P( m_G[v1], 0.3, m_G[v2] );
-    pt p12 = P( m_G[v1], 0.3, m_G[v3] );
-    pt p13 = P( m_G[v1], 0.3, m_G[v4] );
+    pt p11 = P( m_G[v1], c_shrink, m_G[v2] );
+    pt p12 = P( m_G[v1], c_shrink, m_G[v3] );
+    pt p13 = P( m_G[v1], c_shrink, m_G[v4] );
     points[0] = P( p11, p12, p13 );
       
-    pt p21 = P( m_G[v2], 0.3, m_G[v3] );
-    pt p22 = P( m_G[v2], 0.3, m_G[v1] );
-    pt p23 = P( m_G[v2], 0.3, m_G[v4] );
+    pt p21 = P( m_G[v2], c_shrink, m_G[v3] );
+    pt p22 = P( m_G[v2], c_shrink, m_G[v1] );
+    pt p23 = P( m_G[v2], c_shrink, m_G[v4] );
     points[1] = P( p21, p22, p23 );
       
-    pt p31 = P( m_G[v3], 0.3, m_G[v1] );
-    pt p32 = P( m_G[v3], 0.3, m_G[v2] );
-    pt p33 = P( m_G[v3], 0.3, m_G[v4] );
+    pt p31 = P( m_G[v3], c_shrink, m_G[v1] );
+    pt p32 = P( m_G[v3], c_shrink, m_G[v2] );
+    pt p33 = P( m_G[v3], c_shrink, m_G[v4] );
     points[2] = P( p31, p32, p33 );
     
-    pt p41 = P( m_G[v4], 0.3, m_G[v1] );
-    pt p42 = P( m_G[v4], 0.3, m_G[v2] );
-    pt p43 = P( m_G[v4], 0.3, m_G[v3] );
+    pt p41 = P( m_G[v4], c_shrink, m_G[v1] );
+    pt p42 = P( m_G[v4], c_shrink, m_G[v2] );
+    pt p43 = P( m_G[v4], c_shrink, m_G[v3] );
     points[3] = P( p41, p42, p43 );
     
     for (int i = 0; i < 4; i++)
