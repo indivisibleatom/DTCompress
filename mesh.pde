@@ -109,7 +109,7 @@ class Mesh {
   int[] m_tOffsets = new int[maxnt]; //Storing the T offsets for propagating down LOD's. TODO msati3: better approach?
   int[] m_triangleColorMap = null; //Control of triangle coloring possible from here
   int[] m_vertexVBO;
-  int[] m_indexVBO;
+  int[] m_colorVBO;
 
   //  ==================================== OFFSET ====================================
   void offset() {
@@ -177,6 +177,7 @@ class Mesh {
     for (int i=0; i<nc; i++) M.O[i]=O[i];
     M.nc=nc;
     M.resetMarkers();
+    M.initVBO();
   }
 
   void declareVectors() {
@@ -722,7 +723,76 @@ class Mesh {
     } while ( currentCorner != corner && valence < 100 );
     return valence;
   }
+
+  void updateColorsVBO(int opacity)
+  {
+    ByteBuffer col = ByteBuffer.allocate( 4 * nc );
+    color c = 0;
+    for (int i = 0; i < nc; i++)
+    {
+      int t = t(i);
+      if (m_triangleColorMap != null)
+      {
+        c = m_triangleColorMap[tm[t]];
+      }
+      else
+      {
+        if (tm[t]==0) c = formColor(cyan, opacity); 
+        if (tm[t]==1) c = formColor(brown, opacity); 
+        if (tm[t]==2) c = formColor(orange, opacity); 
+        if (tm[t]==3) c = formColor(cyan, opacity); 
+        if (tm[t]==4) c = formColor(magenta, opacity); 
+        if (tm[t]==5) c = formColor(green, opacity); 
+        if (tm[t]==6) c = formColor(blue, opacity); 
+        if (tm[t]==7) c = formColor(#FAAFBA, opacity); 
+        if (tm[t]==8) c = formColor(blue, opacity); 
+        if (tm[t]==9)
+        {
+          if (cm2[t] == 0)
+          {
+            c = formColor(yellow, opacity); 
+          }
+          else if (cm2[t] == 1)
+          {
+            c = formColor(blue, opacity); 
+          }
+          else if (cm2[t] == 2)
+          {
+            c = formColor(magenta, opacity);
+          }
+          else
+          {
+            c = formColor(brown, opacity);
+          }
+        }
+        
+        
+        if (tm[t]==10) c = formColor(cyan, opacity); 
+        if (tm[t]==11) c = formColor(brown, opacity); 
+        if (tm[t]==12) c = formColor(orange, opacity); 
+        if (tm[t]==13) c = formColor(cyan, opacity); 
+        if (tm[t]==14) c = formColor(magenta, opacity); 
+        if (tm[t]==15) c = formColor(green, opacity); 
+        if (tm[t]==16) c = formColor(blue, opacity); 
+        if (tm[t]==17) c = formColor(#FAAFBA, opacity); 
+        if (tm[t]==18) c = formColor(blue, opacity); 
+        if (tm[t]==19) c = formColor(yellow, opacity); 
+      }
+      col.put((byte)(c >> 16 & 0xFF));
+      col.put((byte)(c >> 8 & 0xFF));
+      col.put((byte)(c & 0xFF));
+      col.put((byte)alpha(c));
+    }
+    col.rewind();
+
+    pgl.beginGL();
+    gl.glBindBuffer( GL.GL_ARRAY_BUFFER, m_colorVBO[0] );
+    gl.glBufferData( GL.GL_ARRAY_BUFFER, 4 * 4 * nc, col, GL.GL_DYNAMIC_DRAW );
   
+    gl.glBindBuffer( GL.GL_ARRAY_BUFFER, 0 );
+  
+    pgl.endGL();
+  } 
 
   // ============================================= DISPLAY CORNERS and LABELS =============================
   void showCorners()
@@ -840,7 +910,8 @@ class Mesh {
         drawEdge(c);
       };
     };
-  };         // draws all border edges
+  }; // draws all border edges
+
   void showEdges () {
     for (int c=0; c<nc; c++)
     {
@@ -877,7 +948,7 @@ class Mesh {
         endShape(CLOSE);
       };
   }
-
+  
   // display shrunken and offset triangles
   void showShrunkT(int t, float e) {
     if (visible[t]) showShrunk(g(3*t), g(3*t+1), g(3*t+2), e);
@@ -937,21 +1008,24 @@ class Mesh {
   
   void drawVBO()
   { 
-   fill(green);       
-
     pgl.beginGL();
     gl.glEnableClientState( GL.GL_VERTEX_ARRAY );
+    gl.glEnableClientState(GL.GL_COLOR_ARRAY);
+
     gl.glBindBuffer( GL.GL_ARRAY_BUFFER, m_vertexVBO[0] );
-    gl.glBindBuffer( GL.GL_ELEMENT_ARRAY_BUFFER, m_indexVBO[0] );
     gl.glVertexPointer(3, GL.GL_FLOAT, 0, 0);
-    //gl.glDrawArrays( GL.GL_TRIANGLES, 0, 3 * nc );
-    gl.glDrawElements( GL.GL_TRIANGLES, nc, GL.GL_UNSIGNED_INT, 0 );
-    gl.glBindBuffer( GL.GL_ELEMENT_ARRAY_BUFFER, 0);
+
+    gl.glBindBuffer( GL.GL_ARRAY_BUFFER, m_colorVBO[0] );
+    gl.glColorPointer( 4, GL.GL_UNSIGNED_BYTE, 0, 0);
+
+    gl.glDrawArrays( GL.GL_TRIANGLES, 0, 3 * nc );
+
     gl.glBindBuffer( GL.GL_ARRAY_BUFFER, 0);
     gl.glDisableClientState(GL.GL_VERTEX_ARRAY);
+    gl.glDisableClientState(GL.GL_COLOR_ARRAY);
     pgl.endGL();
   }
-
+  
   void showTriangles(Boolean front, int opacity, float shrunk) {
     //drawVBO();
     /*for (int t=0; t<nt; t++) {
@@ -1938,40 +2012,44 @@ class Mesh {
   void initVBO()
   {
     m_vertexVBO = new int[1];
-    m_indexVBO = new int[1];
+    m_colorVBO = new int[1];
 
-    FloatBuffer geometry = FloatBuffer.allocate( 3 * nv );
-    for (int i = 0; i < nv; i++)
+    FloatBuffer geometry = FloatBuffer.allocate( 3 * nc );
+    for (int i = 0; i < nc; i++)
     {
-      geometry.put(G[i].x);
-      geometry.put(G[i].y);
-      geometry.put(G[i].z);
+      geometry.put(G[V[i]].x);
+      geometry.put(G[V[i]].y);
+      geometry.put(G[V[i]].z);
     }
     geometry.rewind();
    
-    IntBuffer connectivity = IntBuffer.allocate( 3 * nt );
+    ByteBuffer col = ByteBuffer.allocate( 4 * nc );
     for (int i = 0; i < nc; i++)
     {
-      connectivity.put(V[i]);
+      byte zero = 0;
+      byte maxi = (byte)(255 & 0xff);
+      col.put(zero);
+      col.put(maxi);
+      col.put(zero);
+      col.put(maxi);
     }
-    connectivity.rewind();
+    col.rewind();
 
     pgl.beginGL();
     gl.glGenBuffers( 1, m_vertexVBO, 0 );
     gl.glBindBuffer( GL.GL_ARRAY_BUFFER, m_vertexVBO[0] );
-    gl.glBufferData( GL.GL_ARRAY_BUFFER, 3 * 4 * nv, geometry, GL.GL_STATIC_DRAW );
-      
-    gl.glGenBuffers( 1, m_indexVBO, 0 );
-    gl.glBindBuffer( GL.GL_ELEMENT_ARRAY_BUFFER, m_indexVBO[0] );
-    gl.glBufferData( GL.GL_ELEMENT_ARRAY_BUFFER, nc * 4, connectivity, GL.GL_STATIC_DRAW );
+    gl.glBufferData( GL.GL_ARRAY_BUFFER, 3 * 4 * nc, geometry, GL.GL_STATIC_DRAW );
     
-    gl.glBindBuffer( GL.GL_ELEMENT_ARRAY_BUFFER, 0 );
+    gl.glGenBuffers( 1, m_colorVBO, 0 );
+    gl.glBindBuffer( GL.GL_ARRAY_BUFFER, m_colorVBO[0] );
+    gl.glBufferData( GL.GL_ARRAY_BUFFER, 4 * 4 * nc, col, GL.GL_DYNAMIC_DRAW );
+
     gl.glBindBuffer( GL.GL_ARRAY_BUFFER, 0 );
 
     pgl.endGL();
-    
+
     geometry.clear();
-    connectivity.clear();
+    col.clear();
   }
 
   // ============================================================= CUT =======================================================

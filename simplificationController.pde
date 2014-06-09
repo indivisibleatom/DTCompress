@@ -112,7 +112,7 @@ class SimplificationController
         //islandCreator.createIslands("regionGrow");
         MeshSimplifierEdgeCollapse simplifier = new MeshSimplifierEdgeCollapse( m_islandMesh, m_lodMapperManager );
         m_baseMesh = simplifier.simplify(); 
-        m_baseMesh.computeBox(); 
+        m_baseMesh.computeBox();
         onMeshAdded(m_baseMesh);
         if ( currentLOD != 0 )
         {
@@ -139,6 +139,7 @@ class SimplificationController
           setWorkingMesh();
         }
         currentLOD--;
+        break;
       }
     }
 
@@ -160,6 +161,9 @@ class SimplificationController
     }
     else if (key=='p')  //Create base mesh and register it to other viewport archival
     {
+      IslandCreator islandCreator = new IslandCreator(m_islandMesh, (int) random(m_islandMesh.nt * 3));
+      islandCreator.createIslands("heuristic");
+
       MeshSimplifierEdgeCollapse simplifier = new MeshSimplifierEdgeCollapse( m_islandMesh, m_lodMapperManager );
       m_baseMesh = simplifier.simplify(); 
 

@@ -519,6 +519,7 @@ class IslandCreator
     {
       createIslandsHeuristic();
     }
+    m_mesh.updateColorsVBO();
   }
    
   void createIslandsHeuristic()

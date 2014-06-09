@@ -27,6 +27,10 @@ class IslandMesh extends Mesh
    nt = m.nt;
    nc = m.nc;
    
+   /*m_vertexVBO = m.m_vertexVBO;
+   m_colorVBO = m.m_colorVBO;*/
+   initVBO();
+   
    m_userInputHandler = new IslandMeshUserInputHandler(this);
  }
 
@@ -41,6 +45,57 @@ class IslandMesh extends Mesh
  {
    super.resetMarkers();
  }
+ 
+ void updateColorsVBO(int opacity)
+ {
+    ByteBuffer col = ByteBuffer.allocate( 4 * nc );
+    color c = 0;
+    for (int i = 0; i < nc; i++)
+    {
+      int t = t(i);
+      if (tm[t]==0) c = formColor(red, opacity); 
+      if (tm[t]==1) c = formColor(brown, opacity); 
+      if (tm[t]==2) c = formColor(orange, opacity); 
+      if (tm[t]==3) c = formColor(cyan, opacity); 
+      if (tm[t]==4) c = formColor(magenta, opacity); 
+      if (tm[t]==5) c = formColor(green, opacity); 
+      if (tm[t]==6) c = formColor(blue, opacity); 
+      if (tm[t]==7) c = formColor(#FAAFBA, opacity); 
+      if (tm[t]==8) c = formColor(blue, opacity); 
+      if (tm[t]==9)
+      {
+        if (cm2[t] == 0)
+        {
+          c = formColor(green, opacity); 
+        }
+        else if (cm2[t] == 1)
+        {
+          c = formColor(yellow, opacity); 
+        }
+        else if (cm2[t] == 2)
+        {
+          c = formColor(magenta, opacity);
+        }
+        else
+        {
+          c = formColor(blue, opacity);
+        }
+      }
+      col.put((byte)(c >> 16 & 0xFF));
+      col.put((byte)(c >> 8 & 0xFF));
+      col.put((byte)(c & 0xFF));
+      col.put((byte)alpha(c));
+    }
+    col.rewind();
+
+    pgl.beginGL();
+    gl.glBindBuffer( GL.GL_ARRAY_BUFFER, m_colorVBO[0] );
+    gl.glBufferData( GL.GL_ARRAY_BUFFER, 4 * 4 * nc, col, GL.GL_DYNAMIC_DRAW );
+  
+    gl.glBindBuffer( GL.GL_ARRAY_BUFFER, 0 );
+  
+    pgl.endGL();
+ } 
   
  void showTriangles(Boolean front, int opacity, float shrunk) {
    drawVBO();  

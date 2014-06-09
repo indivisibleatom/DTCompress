@@ -12,3 +12,11 @@ void setColors() {
    white = color(250,250,250); black = color(0,0,0); grey = color(100,100,100); metal = color(150,150,250);
   }
  color ramp(int v, int mv) {return color(int(float(255)*v/mv),100,int(float(255)*(mv-v)/mv)) ; }
+ 
+ color formColor(color col, int opacity)
+ {
+   int r = (col >> 16) & 0xFF;  
+   int g = (col >> 8) & 0xFF;
+   int b = col & 0xFF;
+   return color(r, g, b, opacity);
+ }
