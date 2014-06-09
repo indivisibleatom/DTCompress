@@ -43,7 +43,8 @@ class IslandMesh extends Mesh
  }
   
  void showTriangles(Boolean front, int opacity, float shrunk) {
-    for (int t=0; t<nt; t++) {
+   drawVBO();  
+    /*for (int t=0; t<nt; t++) {
       if (V[3*t] == -1) continue;    //Handle base mesh compacted triangles      
       if (!vis[tm[t]] || frontFacing(t)!=front || !visible[t]) continue;
       if (!frontFacing(t)&&showBack) {
@@ -84,6 +85,6 @@ class IslandMesh extends Mesh
         if (m_drawingState.m_shrunk != 0) showShrunkT(t, m_drawingState.m_shrunk); 
         else shade(t);
       }
-    }
+    }*/
   }
 }

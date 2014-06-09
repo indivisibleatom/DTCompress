@@ -108,6 +108,8 @@ class Mesh {
   MeshUtils m_utils = new MeshUtils(this);
   int[] m_tOffsets = new int[maxnt]; //Storing the T offsets for propagating down LOD's. TODO msati3: better approach?
   int[] m_triangleColorMap = null; //Control of triangle coloring possible from here
+  int[] m_vertexVBO;
+  int[] m_indexVBO;
 
   //  ==================================== OFFSET ====================================
   void offset() {
@@ -847,7 +849,7 @@ class Mesh {
   };
   
   void drawEdge(int c) {
-    show(g(p(c)), g(n(c)));
+    //show(g(p(c)), g(n(c)));
   };  // draws edge of t(c) opposite to corner c
   void drawSilhouettes() {
     for (int c=0; c<nc; c++) if (c<o(c) && frontFacing(t(c))!=frontFacing(t(o(c)))) drawEdge(c);
@@ -922,8 +924,37 @@ class Mesh {
     }
   } 
 
+  private void showTestTriangle()
+  {
+   pgl.beginGL();
+   gl.glBegin(GL.GL_TRIANGLES);
+     gl.glVertex3f( 0, 0, 1 );
+     gl.glVertex3f( 100, 0, 1 );
+     gl.glVertex3f( 50, 50, 1 );
+   gl.glEnd();
+   pgl.endGL();
+  }
+  
+  void drawVBO()
+  { 
+   fill(green);       
+
+    pgl.beginGL();
+    gl.glEnableClientState( GL.GL_VERTEX_ARRAY );
+    gl.glBindBuffer( GL.GL_ARRAY_BUFFER, m_vertexVBO[0] );
+    gl.glBindBuffer( GL.GL_ELEMENT_ARRAY_BUFFER, m_indexVBO[0] );
+    gl.glVertexPointer(3, GL.GL_FLOAT, 0, 0);
+    //gl.glDrawArrays( GL.GL_TRIANGLES, 0, 3 * nc );
+    gl.glDrawElements( GL.GL_TRIANGLES, nc, GL.GL_UNSIGNED_INT, 0 );
+    gl.glBindBuffer( GL.GL_ELEMENT_ARRAY_BUFFER, 0);
+    gl.glBindBuffer( GL.GL_ARRAY_BUFFER, 0);
+    gl.glDisableClientState(GL.GL_VERTEX_ARRAY);
+    pgl.endGL();
+  }
+
   void showTriangles(Boolean front, int opacity, float shrunk) {
-    for (int t=0; t<nt; t++) {
+    //drawVBO();
+    /*for (int t=0; t<nt; t++) {
       if (V[3*t] == -1) continue;    //Handle base mesh compacted triangles      
       if (!vis[tm[t]] || frontFacing(t)!=front || !visible[t]) continue;
       if (!frontFacing(t)&&showBack) {
@@ -984,11 +1015,11 @@ class Mesh {
         if (m_drawingState.m_shrunk != 0) showShrunkT(t, m_drawingState.m_shrunk); 
         else shade(t);
       }
-    }
+    }*/
   }
 
   void showBackTriangles() {
-    for (int t=0; t<nt; t++) if (!frontFacing(t)) shade(t);
+    /*for (int t=0; t<nt; t++) if (!frontFacing(t)) shade(t);*/
   };  
   void showMarkedTriangles() {
     for (int t=0; t<nt; t++) if (visible[t]&&Mt[t]!=0) {
@@ -1832,6 +1863,7 @@ class Mesh {
       //V[3*k+1]=b-1;  
       //V[3*k+2]=c-1;
     }
+    initVBO();
   };
 
 
@@ -1902,6 +1934,45 @@ class Mesh {
     }
     for (int i=0; i<nv; i++) G[i].mul(4);
   }; 
+
+  void initVBO()
+  {
+    m_vertexVBO = new int[1];
+    m_indexVBO = new int[1];
+
+    FloatBuffer geometry = FloatBuffer.allocate( 3 * nv );
+    for (int i = 0; i < nv; i++)
+    {
+      geometry.put(G[i].x);
+      geometry.put(G[i].y);
+      geometry.put(G[i].z);
+    }
+    geometry.rewind();
+   
+    IntBuffer connectivity = IntBuffer.allocate( 3 * nt );
+    for (int i = 0; i < nc; i++)
+    {
+      connectivity.put(V[i]);
+    }
+    connectivity.rewind();
+
+    pgl.beginGL();
+    gl.glGenBuffers( 1, m_vertexVBO, 0 );
+    gl.glBindBuffer( GL.GL_ARRAY_BUFFER, m_vertexVBO[0] );
+    gl.glBufferData( GL.GL_ARRAY_BUFFER, 3 * 4 * nv, geometry, GL.GL_STATIC_DRAW );
+      
+    gl.glGenBuffers( 1, m_indexVBO, 0 );
+    gl.glBindBuffer( GL.GL_ELEMENT_ARRAY_BUFFER, m_indexVBO[0] );
+    gl.glBufferData( GL.GL_ELEMENT_ARRAY_BUFFER, nc * 4, connectivity, GL.GL_STATIC_DRAW );
+    
+    gl.glBindBuffer( GL.GL_ELEMENT_ARRAY_BUFFER, 0 );
+    gl.glBindBuffer( GL.GL_ARRAY_BUFFER, 0 );
+
+    pgl.endGL();
+    
+    geometry.clear();
+    connectivity.clear();
+  }
 
   // ============================================================= CUT =======================================================
   void cut(pt[] CP, int ncp) {
