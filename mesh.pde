@@ -177,7 +177,6 @@ class Mesh {
     for (int i=0; i<nc; i++) M.O[i]=O[i];
     M.nc=nc;
     M.resetMarkers();
-    M.initVBO();
   }
 
   void declareVectors() {
@@ -463,7 +462,7 @@ class Mesh {
       pc=b;
     }
     if ( origCC != cc && DEBUG && DEBUG_MODE >= LOW ) { 
-      print("Corner picked :" + cc + " vertex :" + v(cc) );
+      print("Corner picked :" + cc + " vertex :" + v(cc) + "\n");
     }
   } // picks closest corner to X
   void picksOfClosestVertex (pt X) {
@@ -1421,88 +1420,6 @@ class Mesh {
     nc=3*nt;  // update vertex count and corner count
   };
 
-
-
-
-  // =========================================== STITCH SHELLS ==================================================================================================================================================== ###
-  int c1=0, c2=0;
-  pt Q1 = P();
-  pt Q2 = P();
-  void stitch(int m1, int m2, int m3) { // add m3 triangles to sip gap between m1 and m2
-    c1=-1; 
-    for (int c=0; c<nc; c++) if (tm[t(c)]==m1) if (b(c)) {
-      c1=c; 
-      break;
-    } 
-    else if (tm[t(o(c))]!=m1) {
-      c1=c; 
-      break;
-    } // compute border corner of m1
-    if (c1==-1) {
-      c1=0; 
-      return ;
-    }; // no border found
-    cc=c1;
-    pt Q=g(p(c1));
-    Q1=Q;
-    // search for matching border edge of m2
-    float d = 1000000;
-    c2=-1; 
-    for (int c=0; c<nc; c++) if (tm[t(c)]==m2) {
-      if (b(c)) {
-        if ( d( P(g(n(c)), g(p(c)) ), Q)<d ) {
-          c2=c; 
-          d=d(P(g(n(c)), g(p(c))), Q);
-        }
-      }
-      else if (tm[t(o(c))]!=m2) {
-        if (d(P(g(n(c)), g(p(c))), Q)<d) {
-          c2=c; 
-          d=d(P(g(n(c)), g(p(c))), Q);
-        }
-      }
-    }
-    if (c2==-1) {
-      c2=0; 
-      return ;
-    };
-    sc=c2;  
-    addTriangle( v(p(c1)), v(p(c2)), v(n(c2)), m3 );
-    int sc1=c1, sc2=c2; // record starting corners
-    c2=pal(c2);
-    boolean e1=false, e2=false; // finished walking around borders
-    int i=0;
-    while ( (!e1  || !e2) && i++<nsteps) {
-      if (e2 || (!e1 && (d(g(n(c2)), g(n(c1)))) < d(g(p(c2)), g(p(c1)))) ) {
-        addTriangle( v(n(c2)), v(p(c1)), v(n(c1)), m3 ); 
-        c1=nal(c1); 
-        if (c1==sc1) e1=true;
-      }
-      else {
-        addTriangle( v(p(c1)), v(p(c2)), v(n(c2)), m3 ); 
-        c2=pal(c2); 
-        if (c2==sc2) e2=true;
-      }
-    }
-  }
-
-  int nal(int c) {
-    int a=p(c); 
-    while (!b (a)&&tm[t(a)]==tm[t(o(a))]) a=p(o(a)); 
-    return a;
-  } // returns next corner around loop
-  int pal(int c) {
-    int a=n(c); 
-    while (!b (a)&&tm[t(a)]==tm[t(o(a))]) a=n(o(a)); 
-    return a;
-  } // returns previous corner around loop
-
-  // =========================================== STITCH SHELLS (END) ============================================================================================================================================ ###
-
-
-
-
-
   // =========================================== GEODESIC MEASURES, DISTANCES =============================
   void computeDistance(int maxr) { // marks vertices and triangles at a graph distance of maxr
     int tc=0; // triangle counter
@@ -1945,9 +1862,9 @@ class Mesh {
     for (int i=0; i<nv; i++) G[i].mul(4);
   }; 
 
-  void initVBO()
+  void initVBO(int typeMesh) //0 static, 1 dynamic
   {
-    m_vertexVBO = new int[1];
+     m_vertexVBO = new int[1];
     m_colorVBO = new int[1];
     m_edgeVBO = new int[1];
 
@@ -1993,12 +1910,12 @@ class Mesh {
     pgl.beginGL();
     gl.glGenBuffers( 1, m_vertexVBO, 0 );
     gl.glBindBuffer( GL.GL_ARRAY_BUFFER, m_vertexVBO[0] );
-    gl.glBufferData( GL.GL_ARRAY_BUFFER, 3 * 4 * nc, geometry, GL.GL_STATIC_DRAW );
-    
+    gl.glBufferData( GL.GL_ARRAY_BUFFER, 3 * 4 * nc, geometry, typeMesh == 0 ? GL.GL_STATIC_DRAW : GL.GL_DYNAMIC_DRAW );
+
     pgl.beginGL();
     gl.glGenBuffers( 1, m_edgeVBO, 0 );
     gl.glBindBuffer( GL.GL_ARRAY_BUFFER, m_edgeVBO[0] );
-    gl.glBufferData( GL.GL_ARRAY_BUFFER, 2 * 3 * 4 * nc, edgeGeometry, GL.GL_STATIC_DRAW );
+    gl.glBufferData( GL.GL_ARRAY_BUFFER, 2 * 3 * 4 * nc, edgeGeometry, typeMesh == 0 ? GL.GL_STATIC_DRAW : GL.GL_DYNAMIC_DRAW );
 
     gl.glGenBuffers( 1, m_colorVBO, 0 );
     gl.glBindBuffer( GL.GL_ARRAY_BUFFER, m_colorVBO[0] );
@@ -2011,6 +1928,11 @@ class Mesh {
     geometry.clear();
     edgeGeometry.clear();
     col.clear();
+  }
+
+  void initVBO()
+  {
+    initVBO(0); //static mesh
   }
 
   // ============================================================= CUT =======================================================

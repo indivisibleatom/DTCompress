@@ -16,20 +16,13 @@ GLU glu;
 PGraphicsOpenGL pgl;
 
 // ****************************** GLOBAL VARIABLES FOR DISPLAY OPTIONS *********************************
-Boolean showMesh=true, labels=false, 
-        showHelpText=false, showLeft=true, showRight=true, showBack=false, showMiddle=false, showBaffle=false; // display modes
-
-int nsteps=250;
+Boolean showMesh=true, labels=false, showHelpText=false, showLeft=true, showRight=true, showBack=false, showMiddle=false, showBaffle=false; // display modes
 
 SimplificationController g_controller;
 
-/*float s=10; // scale for drawing cutout
-float a=0, dx=0, dy=0;   // angle for drawing cutout
-float sd=10; // samp[le distance for cut curve
-pt sE = P(), sF = P(); vec sU=V(); //  view parameters (saved with 'j'*/
-
 // *******************************************************************************************************************    SETUP
-void setup() {
+void setup() 
+{
   size(1600, 1000, OPENGL); // size(500, 500, OPENGL);  
   setColors(); sphereDetail(5); 
   PFont font = loadFont("GillSans-24.vlw"); textFont(font, 20);  // font for writing labels on 
@@ -43,44 +36,52 @@ void setup() {
 }
 
 // ******************************************************************************************************************* DRAW      
-void draw() {  
+void draw()
+{  
   smooth();
   background(white);
   g_controller.viewportManager().draw();
   gl.glColor3i(255,0,0);
- } // end draw
+}// end draw
  
- // ****************************************************************************************************************************** INTERRUPTS
+// ****************************************************************************************************************************** INTERRUPTS
 Boolean pressed=false;
-void mousePressed() {
+void mousePressed()
+{
   g_controller.viewportManager().onMousePressed();
-  }
+}
   
-void mouseDragged() {
+void mouseDragged() 
+{
   g_controller.viewportManager().onMouseDragged();
-  }
+}
   
-void mouseMoved() {
+void mouseMoved() 
+{
   g_controller.viewportManager().onMouseMoved();
 }
 
-void mouseReleased() {
-  }
+void mouseReleased() 
+{
+}
   
-void keyReleased() {
-   g_controller.viewportManager().onKeyReleased();
-   } 
+void keyReleased() 
+{
+  g_controller.viewportManager().onKeyReleased();
+} 
 
  
-void keyPressed() {
-   g_controller.onKeyPressed();
-  } 
+void keyPressed() 
+{
+  g_controller.onKeyPressed();
+} 
   
 Boolean prev=false;
 
-void showGrid(float s) {
+void showGrid(float s) 
+{
   for (float x=0; x<width; x+=s*20) line(x,0,x,height);
   for (float y=0; y<height; y+=s*20) line(0,y,width,y);
-  }
+}
   
 

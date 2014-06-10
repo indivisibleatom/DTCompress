@@ -17,9 +17,9 @@ class FutureLODAndVOrder
 
 class WorkingMesh extends Mesh
 {
-  int[] m_LOD = new int[maxnv]; //LOD per vertex
+  int[] m_deathLOD = new int[maxnv]; //LOD per vertex at which it dies
   int[] m_deathAge = new int[maxnv]; //The order of the vertex
-  int[] m_birthAge = new int[maxnv];
+  int[] m_birthLOD = new int[maxnv];
 
   int[] m_orderT = new int[maxnt]; //The order of the triangle
   int[] m_ageT = new int[maxnt];
@@ -58,8 +58,8 @@ class WorkingMesh extends Mesh
     for (int i = 0; i < m.nv; i++)
     {
       FutureLODAndVOrder future = getLODAndVAge( NUMLODS - 1, i );
-      m_LOD[i] = future.lod();
-      m_birthAge[i] = NUMLODS - 1;
+      m_deathLOD[i] = future.lod();
+      m_birthLOD[i] = NUMLODS - 1;
       m_deathAge[i] = future.orderV();
       m_descendedFrom[i] = i;
     }   
@@ -67,6 +67,7 @@ class WorkingMesh extends Mesh
   
   void initWorkingMesh()
   {
+    initVBO(1);
     resetMarkers();
     markTriangleAges();
     markExpandableVerts();
@@ -101,7 +102,7 @@ class WorkingMesh extends Mesh
   {
     if (DEBUG && DEBUG_MODE >= VERBOSE )
     {
-      print("Find smallest expansion corner for corner " + corner + "LOD and LOD swing " + lod + " " + m_LOD[v(n(s(corner)))] + "\n");
+      print("Find smallest expansion corner for corner " + corner + "LOD and LOD swing " + lod + " " + m_deathLOD[v(n(s(corner)))] + "\n");
     }
     int minTriangle = 332433240;
     int currentCorner = corner;
@@ -135,11 +136,12 @@ class WorkingMesh extends Mesh
     return smallestCorner;
   }
 
+  //Get the corner numbers of the corners to be split for a given vertex (given a corners of the vertex)
   private int[] getExpansionCornerNumbers(int lod, int corner)
   {
     if ( DEBUG && DEBUG_MODE >= VERBOSE )
     {
-      print("Get expansion corner numbers for lod " + lod + " " + m_LOD[v(corner)] + "\n");
+      print("Get expansion corner numbers for lod " + lod + " " + m_deathLOD[v(corner)] + "\n");
     }
     int []result = new int[3];
     int numResults = 0;
@@ -176,14 +178,14 @@ class WorkingMesh extends Mesh
   void homogenize( int corner )
   {
     int currentCorner = corner;
-    int lod = m_LOD[v(corner)];
+    int lod = m_deathLOD[v(corner)];
     boolean fRequiredExpansion = true;
     do
     {
       fRequiredExpansion = false;
       do 
       {
-        int lodCurrent = m_LOD[v(n(currentCorner))];
+        int lodCurrent = m_deathLOD[v(n(currentCorner))];
         if ( lodCurrent > lod )
         {
           expand(n(currentCorner));
@@ -198,9 +200,9 @@ class WorkingMesh extends Mesh
   {
     int vertexIndex = addVertex(p);
     FutureLODAndVOrder future = getLODAndVAge( lod, orderV );
-    m_LOD[vertexIndex] = future.lod();
+    m_deathLOD[vertexIndex] = future.lod();
     m_deathAge[vertexIndex] = future.orderV();
-    m_birthAge[vertexIndex] = lod;
+    m_birthLOD[vertexIndex] = lod;
     return vertexIndex;
   }
 
@@ -209,9 +211,9 @@ class WorkingMesh extends Mesh
     int vertexIndex = index;
     G[index] = p;
     FutureLODAndVOrder future = getLODAndVAge( lod, orderV );
-    m_LOD[vertexIndex] = future.lod();
+    m_deathLOD[vertexIndex] = future.lod();
     m_deathAge[vertexIndex] = future.orderV();
-    m_birthAge[vertexIndex] = lod;
+    m_birthLOD[vertexIndex] = lod;
     return vertexIndex;
   }
 
@@ -230,7 +232,7 @@ class WorkingMesh extends Mesh
   {
     int vertex = v(cc);
     int orderV = m_deathAge[vertex];
-    int lod = m_LOD[vertex];
+    int lod = m_deathLOD[vertex];
     if ( lod >= 0 )
     {
       pt[] result = m_packetFetcher.fetchGeometry(lod, orderV);
@@ -248,12 +250,12 @@ class WorkingMesh extends Mesh
   private boolean sameLODSurrounding( int corner )
   {
     int vertex = v( corner );
-    int lod = m_LOD[vertex];
+    int lod = m_deathLOD[vertex];
     
     int currentCorner = corner;
     do
     {
-      if ( m_LOD[ v(currentCorner) ] != lod )
+      if ( m_deathLOD[ v(currentCorner) ] != lod )
         return false;
       currentCorner = s(currentCorner);
     }while (currentCorner != corner);
@@ -276,7 +278,7 @@ class WorkingMesh extends Mesh
       int cornerOffset = i%3;
 
       int orderT = m_orderT[triangle];
-      int lod = m_LOD[vertex];
+      int lod = m_deathLOD[vertex];
       if (sameLODSurrounding( i ))
       {
         if (lod >= 0)
@@ -341,11 +343,14 @@ class WorkingMesh extends Mesh
   
   private int populateSplitBitsArray( boolean[] splitArray, int currentLODWave, int corner, int[] corners, int sizeCornersArray, int sizeSplitBitsArray )
   {
+    print("Here0 " + sizeCornersArray + "\n");
     int[] ct = getExpansionCornerNumbers(currentLODWave, corner);
     for (int i = 0; i < 3; i++)
     {
       corners[sizeCornersArray+i] = ct[i];
     }
+    
+    print("Here1\n");
     int currentCorner = corner;
     int numSplitEdges = 0;
     int count=0;
@@ -365,7 +370,7 @@ class WorkingMesh extends Mesh
       currentCorner = s(currentCorner);
     }
     while (currentCorner != corner && numSplitEdges != 3);
-    //print("\n");
+    print("Here2\n");
     if (DEBUG && DEBUG_MODE >= LOW)
     {
       if ( numSplitEdges != 3 )
@@ -373,6 +378,7 @@ class WorkingMesh extends Mesh
         print("workingMesh::populateSplitBitsArray - number of splitBits is not 3! " + currentLODWave + " " + v(corner) + "\n");
       }
     }
+    print("Here3\n");
     return count;
   }
   
@@ -424,7 +430,7 @@ class WorkingMesh extends Mesh
         {
           cornerForVertex[vertex] = i;
         }
-        int lod = m_LOD[vertex];
+        int lod = m_deathLOD[vertex];
         if ( lod == currentLODWave )
         {
           if ( !expandArray[vertex] )
@@ -497,7 +503,30 @@ class WorkingMesh extends Mesh
     print("Total bits per vertex " + totalBits + " " + (float)totalBits/g_totalVertices + "\n");
     print("Total bits per choose " + totalBitsChoose + " " + (float)totalBitsChoose/g_totalVertices + "\n");
     print("Num 0's " + countFalse + " Num 1's " + countTrue + "\n");
+  } 
+  
+  private boolean[] getRegionArray( ArrayList<Integer> regionCorners )
+  {
+    boolean[] regionArray = new boolean[nv];
+    for (int i:regionCorners)
+    {
+      regionArray[v(i)] = true;
+    }
+    return regionArray;
   }
+   
+  void selectRegion(int corner)
+  {
+    boolean[] markedVertices = new boolean[nv];
+
+    ArrayList<Integer> inRegion = new ArrayList<Integer>();
+
+    inRegion.add( corner );
+    markedVertices[v(corner)] = true;
+
+    ArrayList<Integer> expandedRegion = expandInRegion( inRegion, 1, markedVertices );
+    setRegion(markedVertices);
+  } 
   
   private void markAllSurrounding( ArrayList<Integer> inRegionCornersNew, ArrayList<Integer> inRegionCornersOld, boolean[] markedVertices )
   {
@@ -512,7 +541,7 @@ class WorkingMesh extends Mesh
           markedVertices[v(n(currentCorner))] = true;
         }
         currentCorner = s(currentCorner);
-      }while(currentCorner != corner);
+      }while (currentCorner != corner);
     }
   }
   
@@ -547,66 +576,9 @@ class WorkingMesh extends Mesh
     }
     return inRegionCornersCurrent;
   }
-  
-  private boolean[] getRegionArray( ArrayList<Integer> regionCorners )
-  {
-    boolean[] regionArray = new boolean[nv];
-    for (int i:regionCorners)
-    {
-      regionArray[v(i)] = true;
-    }
-    return regionArray;
-  }
-   
-  void selectRegion(int corner)
-  {
-    boolean[] markedVertices = new boolean[nv];
-    markedVertices[v(corner)] = true;
 
-    ArrayList<Integer> inRegion = new ArrayList<Integer>();
-    inRegion.add( corner );
-    ArrayList<Integer> expandedRegion = expandInRegion( inRegion, 5, markedVertices );
-    setRegion(getRegionArray(expandedRegion));
-  }
-  
-  private void markAllSurrounding( boolean[] newInRegion, boolean[] inRegion, int corner )
-  {
-    int currentCorner = corner;
-    do
-    {
-      newInRegion[v(n(currentCorner))] = true;
-      currentCorner = s(currentCorner);
-    }while(currentCorner != corner);
-  }
-   
-  private void expandInRegion( boolean[] inRegion, int numRings )
-  {
-    boolean[] newInRegion = new boolean[nv];
-    for (int i = 0; i < numRings; i++)
-    {
-      for (int j = 0; j < nv; j++)
-      {
-        newInRegion[j] = inRegion[j];
-      }
-      for (int j = 0; j < nc; j++)
-      {
-        if (inRegion[v(j)])
-        {
-          markAllSurrounding(newInRegion, inRegion, j);
-        }
-      }
-      for (int j = 0; j < nv; j++)
-      {
-        inRegion[j] = newInRegion[j];
-      }
-    }
-  }
-  
   void expandRegion(int corner)
   {
-    float r2 = g_roiSize;
-    pt centerSphere = P(G[v(corner)]);
-    g_centerSphere = centerSphere;
     int vertexToExpand = v(corner);
 
     int currentLODWave = NUMLODS - 1;
@@ -620,6 +592,10 @@ class WorkingMesh extends Mesh
     boolean[] inRegion;
     m_expandVertices.clear();
     m_expandBits.clear();
+    
+    ArrayList<Integer> descendedCorners = new ArrayList<Integer>();
+    ArrayList<Integer> expandedCorners;
+    descendedCorners.add(corner);
 
     while (currentLODWave >= 0)
     {
@@ -629,79 +605,79 @@ class WorkingMesh extends Mesh
       splitBitsArray = new boolean[nc];
       inRegion = new boolean[nv];
       
-      for (int i = 0; i < nv; i++)
+      //Mark the region to be expanded
+      expandedCorners = new ArrayList<Integer>();
+      print("Size of descendedCorners " + descendedCorners.size() + "\n");
+      for (int i:descendedCorners)
       {
-        cornerForVertex[i] = -1;
-        if ( m_descendedFrom[i] == vertexToExpand  )
-        {
-          inRegion[i] = true;
-        }
-      }
-      if ( currentLODWave == NUMLODS - 1 )
-      {
-        expandInRegion( inRegion, 6 );
-        for (int i = 0; i < nv; i++)
-        {
-          if ( inRegion[i] == true )
-          {
-            m_descendedFrom[i] = vertexToExpand;
-          }
-        }
+        inRegion[v(i)] = true;
+        expandedCorners.add(i);
       }
 
       if ( currentLODWave > 0 )
       {
-        expandInRegion( inRegion, currentLODWave );
+        expandedCorners = expandInRegion( expandedCorners, currentLODWave, inRegion );
       }
       setRegion(inRegion);
+      print("Size of expanded region " + expandedCorners.size() + "\n");
  
       int numValidExpandable = 0;
-      for (int i = 0; i < nc; i++)
+      
+      if ( DEBUG && DEBUG_MODE >= LOW )
       {
-        int vertex = v(i);
-        if ( m_birthAge[vertex] >= currentLODWave )
+        for (int i = 0; i < expandedCorners.size() - 1;i++)
         {
-          if ( inRegion[vertex] )
+          for (int j = i+1; j < expandedCorners.size(); j++)
           {
-            if ( cornerForVertex[vertex] == -1 )
-            {
-              cornerForVertex[vertex] = i;
-            }
-            int lod = m_LOD[vertex];
-            if ( lod == currentLODWave )
-            {
-              if ( !expandArray[vertex] )
-              {
-                int orderV = m_deathAge[vertex];
-                //TODO msati3: Could use connectivity here as well
-                pt[] result = m_packetFetcher.fetchGeometry(currentLODWave, orderV);
-                if ( result[1] != null )
-                {
-                  expandArray[vertex] = true;
-                  numExpandable++;
-                }
-              }
-            }
-            numValidExpandable++;
+            checkDebugNotEqual( v(expandedCorners.get(i)), v(expandedCorners.get(j)), "WorkingMesh::expandRegion => Error!! expandedCorners has two corners with same vertex\n", LOW );
           }
         }
       }
-      print("\n" + numValidExpandable+ " " + numExpandable + " ");
+      
+      for (int i:expandedCorners)
+      {
+        int vertex = v(i);
+        checkDebugEqual( inRegion[vertex], true, "WorkingMesh::expandRegion => Error!! Vertex is not marked inRegion\n", LOW );
+       
+        if ( m_birthLOD[vertex] >= currentLODWave ) //This might happen if a region has been expanded, and another one is being expanded
+        {
+          int lod = m_deathLOD[vertex];
+          if ( lod == currentLODWave )
+          {
+            if ( !expandArray[vertex] )
+            {
+              int orderV = m_deathAge[vertex];
+
+              //TODO msati3: Could use connectivity here as well
+              pt[] result = m_packetFetcher.fetchGeometry(currentLODWave, orderV);
+              if ( result[1] != null )
+              {
+                expandArray[vertex] = true;
+                numExpandable++;
+              }              
+            }
+          }
+          numValidExpandable++;
+        }
+      }
+      
+      print("Num valid to be expanded possibly " + numValidExpandable+ " Num expandable " + numExpandable + "\n");
 
       int[] corners = new int[3*numExpandable];
       int sizeSplitBitsArray = 0;
       int sizeCornersArray = 0;
-      for (int i = 0; i < nv; i++)
+      for (int i:expandedCorners)
       {
-        if ( inRegion[i] && m_birthAge[i] >= currentLODWave )
+        int vertex = v(i);
+        if ( m_birthLOD[vertex] >= currentLODWave ) //This might happen if a region has been expanded, and another one is being expanded
         {
-          m_expandBits.add(expandArray[i]);
+          m_expandBits.add(expandArray[vertex]);
           totalBits++;
           totalBitsChoose++;
-          if ( expandArray[i] )
+          if ( expandArray[vertex] )
           {
-            sizeSplitBitsArray += populateSplitBitsArray(splitBitsArray, currentLODWave, cornerForVertex[i], corners, sizeCornersArray, sizeSplitBitsArray);
-            int valence = getValence(cornerForVertex[i]); 
+            sizeSplitBitsArray += populateSplitBitsArray(splitBitsArray, currentLODWave, i, corners, sizeCornersArray, sizeSplitBitsArray);
+            int valence = getValence(i); 
             totalBits += valence;
             totalBitsChoose += ceil((log((valence * (valence - 1) * (valence - 2))/6)/log(2)));
             sizeCornersArray += 3;
@@ -715,17 +691,19 @@ class WorkingMesh extends Mesh
       }
 
       int countExpanded = 0;
-      int numVertices = nv;
-      for (int i = 0; i < numVertices; i++)
+      int numVertices = nv; 
+      for (int i:expandedCorners)
       {
-        if ( expandArray[i] && inRegion[i] && m_birthAge[i] >= currentLODWave )
+        int vertex = v(i);
+        if ( expandArray[vertex] && m_birthLOD[vertex] >= currentLODWave )
         {
-          int orderV = m_deathAge[i];
+          addIfDescendedFromOriginalVertex( i, descendedCorners );
+          int orderV = m_deathAge[vertex];
           pt[] result = m_packetFetcher.fetchGeometry(currentLODWave, orderV);
           m_expandVertices.add(P(result[0])); m_expandVertices.add(P(result[1])); m_expandVertices.add(P(result[2]));
           int[] ct = {corners[countExpanded], corners[countExpanded+1], corners[countExpanded+2]};
           countExpanded+=3;
-          stitch( i, result, currentLODWave, orderV, ct );
+          stitch( vertex, result, currentLODWave, orderV, ct );
         }
       }
       
@@ -746,191 +724,29 @@ class WorkingMesh extends Mesh
     print("Total bits per fully expanded vertices choose " + totalBitsChoose + " " + countVerticesComplete + " " + (float)totalBitsChoose/countVerticesComplete + "\n");
   }
   
-  /*void expandRegion(int corner)
+  void addIfDescendedFromOriginalVertex( int corner, ArrayList<Integer> descendedCorners )
   {
-    int timeStart = millis();
-    int vertexToExpand = v(corner);
-
-    int currentLODWave = NUMLODS-1;
-    boolean[] splitBitsArray;
-    boolean[] markedVertices = new boolean[maxnv];
-    pt[] expandVertices;
-    int numExpandable;
-    int totalBits = 0;
-
-    m_expandVertices.clear();
-    m_expandBits.clear();
-
-    ArrayList<Integer> inRegionCorners = new ArrayList<Integer>();
-    ArrayList<Integer> inRegionCornersExpanded = new ArrayList<Integer>();
-    inRegionCorners.add(corner);
-    markedVertices[v(corner)] = true;
-
-    while (currentLODWave >= 0 )
+    boolean fAddToDescended = false;
+    for (int j:descendedCorners)
     {
-      splitBitsArray = new boolean[nc];
-
-      //if ( currentLODWave == NUMLODS - 1 )
-      //{
-      //  expandInRegion( inRegionCorners, 5, markedVertices );
-      //  for (int i:inRegionCorners)
-      //  {
-      //    m_descendedFrom[v(i)] = vertexToExpand;
-      //  }
-      //}
-
-      inRegionCornersExpanded = expandInRegion( inRegionCorners, currentLODWave, markedVertices );
-
-      numExpandable = 0;
-      boolean[] expandable = new boolean[inRegionCornersExpanded.size()];
-      int currentIndex = 0;
-      for (int i:inRegionCornersExpanded)
+      if ( corner == j )
       {
-        int vertex = v(i);
-        int lod = m_LOD[vertex];
-        if ( lod == currentLODWave )
-        {
-          int orderV = m_deathAge[vertex];
-          //TODO msati3: Could use connectivity here as well
-          pt[] result = m_packetFetcher.fetchGeometry(currentLODWave, orderV);
-          if ( result[1] != null )
-          {
-            m_expandBits.add(true);
-            expandable[currentIndex] = true;
-            numExpandable++;
-          }
-          else
-          {
-            m_expandBits.add(false);
-          }
-          totalBits++;
-        }
-        currentIndex++;
-      }
-      int[] corners = new int[3*numExpandable];
-      int sizeSplitBitsArray = 0;
-      int sizeCornersArray = 0;
-      currentIndex = 0;
-      for (int i:inRegionCornersExpanded)
-      {
-        int vertex = v(i);
-        if ( m_LOD[vertex] == currentLODWave && expandable[currentIndex] )
-        {
-          int count = populateSplitBitsArray(splitBitsArray, currentLODWave, i, corners, sizeCornersArray, sizeSplitBitsArray);
-          sizeSplitBitsArray += count;
-          totalBits += count;
-          sizeCornersArray += 3;
-        }
-        currentIndex++;
-      }
-
-      for (int i = 0; i < sizeSplitBitsArray; i++)
-      {
-        m_expandBits.add( splitBitsArray[i] );
-      }
-      
-      int countExpanded = 0;
-      int numVertices = nv;
-      ArrayList<Integer> inRegionCornersNew = new ArrayList<Integer>();
-      for (int i = 0; i < inRegionCornersExpanded.size(); i++)
-      {
-        int c = inRegionCornersExpanded.get(i);
-        int vertex = v(c);
-        if ( m_LOD[vertex] == currentLODWave && expandable[i])
-        {
-          int orderV = m_deathAge[vertex];
-          pt[] result = m_packetFetcher.fetchGeometry(currentLODWave, orderV);
-          m_expandVertices.add(P(result[0])); m_expandVertices.add(P(result[1])); m_expandVertices.add(P(result[2]));
-          int[] ct = {corners[3*countExpanded], corners[3*countExpanded+1], corners[3*countExpanded+2]};
-          countExpanded++;
-          
-          //for (int j = 0; j < 3; j++)
-          //{
-          //  if (!markedVertices[v(p(ct[j]))])
-          //  {
-          //    markedVertices[v(p(ct[j]))] = true;
-          //    inRegionCornersToAppend.add(p(ct[j]));
-          //  }
-          //}
-
-          //Add the newly created corners
-          if (m_descendedFrom[vertex] == vertexToExpand)
-          {
-            int index = -1;
-            for (int j = 0; j < inRegionCorners.size(); j++)
-            {
-              if ( v(inRegionCorners.get(j)) == vertex )
-              {
-                if ( DEBUG && DEBUG_MODE >= LOW )
-                {
-                  if ( index != -1 )
-                  {
-                    print("ExpandRegion - found twice in list! \n"); 
-                  }
-                }
-                index = j;
-              }
-            }
-            if ( DEBUG && DEBUG_MODE >= LOW )
-            {
-              if ( index == -1 )
-              {
-                print("ExpandRegion - Not found in list \n ");
-              }
-            }
-            inRegionCorners.set(index, nc+2);
-            inRegionCornersNew.add(nc);
-            inRegionCornersNew.add(nc+1);
-          }
-
-          stitch( vertex, result, currentLODWave, orderV, ct );
-        }
-      }
-      
-      for (int j:inRegionCornersNew)
-      {
-        if (m_descendedFrom[v(j)] != vertexToExpand)
-        {
-          if ( DEBUG && DEBUG_MODE >= LOW )
-          {
-            print("New corner not descended from currentVertex - expandRegion!! \n");
-          }
-        }
-        else
-        {
-          inRegionCorners.add(j);
-        }
-      }
-      markedVertices = new boolean[maxnv];
-      for (int j:inRegionCorners)
-      {
-        markedVertices[v(j)] = true;
-      }
-      setRegion(getRegionArray(inRegionCorners));
-      
-      currentLODWave--;
-      
-      //print("Debug " + numVertices + " " + sizeSplitBitsArray + "\n");
-      //print("Expanded one level. New number of vertices " + nv + "\n");
-    }
-    int countVerticesComplete = 0;
-    for (int i = 0; i < nv; i++)
-    {
-      if ( m_descendedFrom[i] == vertexToExpand )
-      {
-        countVerticesComplete++;
+        fAddToDescended = true;
+        break;
       }
     }
-    //print("Total number of fully vertices added " + m_expandVertices.size() + "\n");
-    //print("Total bits per fully expanded vertices " + totalBits + " " + countVerticesComplete + " " + (float)totalBits/countVerticesComplete + "\n");
-    int timeEnd = millis();
-    print("Time taken " + (timeEnd - timeStart) + "\n");
-  }*/
+    //Add first two corners that would be added post stitch (as there are the corners corresponding to newly added vertices v1 and v2
+    if ( fAddToDescended )
+    {
+      descendedCorners.add( nc );
+      descendedCorners.add( nc+1 );
+    }
+  }
 
   void expand(int corner)
   {
     int vertex = v(corner);
-    int lod = m_LOD[vertex];
+    int lod = m_deathLOD[vertex];
     if (lod >= 0)
     {
       homogenize(corner);
@@ -1031,8 +847,12 @@ class WorkingMesh extends Mesh
     O[offsetCorner+7] = offsetCorner;
     O[offsetCorner+10] = offsetCorner+1;
     O[offsetCorner+4] = offsetCorner+2;
+    
     markExpandableVerts();
     
+    initVBO(1);
+    updateColorsVBO(255);
+   
     //Recolor expanded vertex
     //colorCorrect( offsetCorner );
   }
