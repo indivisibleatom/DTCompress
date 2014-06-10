@@ -1006,9 +1006,8 @@ class Mesh {
  
    void drawVBOEdge()
   { 
-    stroke(black);
-    
     pgl.beginGL();
+    gl.glColor3f(0,0,0);
 
     gl.glEnableClientState( GL.GL_VERTEX_ARRAY );
 
