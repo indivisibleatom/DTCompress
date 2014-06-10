@@ -28,7 +28,7 @@ class SimplificationController
     m_baseMesh = null;
     m_islandMesh.declareVectors();  
     m_islandMesh.loadMeshVTS("data/bigHorse.vts", 1);
-    //m_islandMesh.loadMeshVTS("data/new.vts", 10000);
+    //m_islandMesh.loadMeshVTS("data/angel.vts", 100);
     g_totalVertices = m_islandMesh.nv;
     checkCorrect();
     m_islandMesh.updateON(); // computes O table and normals
@@ -128,10 +128,7 @@ class SimplificationController
           m_lodMapperManager.propagateNumberings();
           m_workingMesh = new WorkingMesh( m_baseMesh, m_lodMapperManager );
           m_workingMeshClient = new WorkingMeshClient( m_baseMesh, m_workingMesh );
-          m_workingMesh.resetMarkers();
-          m_workingMesh.markTriangleAges();
-          m_workingMesh.markExpandableVerts();
-          m_workingMesh.computeBox();
+          m_workingMesh.initWorkingMesh();
 
           m_workingMeshClient.resetMarkers();
           m_workingMeshClient.computeBox();
@@ -139,7 +136,6 @@ class SimplificationController
           setWorkingMesh();
         }
         currentLOD--;
-        break;
       }
     }
 

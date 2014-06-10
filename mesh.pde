@@ -40,8 +40,8 @@ class Mesh {
   //  ==================================== Internal variables ====================================
   // max sizes, counts, selected corners
   //5500
-  //int maxnv = 50000;                         //  max number of vertices
   int maxnv = 50000;                         //  max number of vertices
+  //int maxnv = 1000000;                         //  max number of vertices
   int maxnt = maxnv*2;                       // max number of triangles
   int nv = 0;                              // current  number of vertices
   int nt = 0;                   // current number of triangles
@@ -53,7 +53,6 @@ class Mesh {
 
   //Display list related
   int m_displayList = -1;
-  boolean m_fQuickDraw = false;
 
   // primary tables
   int[] V = new int [3*maxnt];               // V table (triangle/vertex indices)
@@ -109,6 +108,7 @@ class Mesh {
   int[] m_tOffsets = new int[maxnt]; //Storing the T offsets for propagating down LOD's. TODO msati3: better approach?
   int[] m_triangleColorMap = null; //Control of triangle coloring possible from here
   int[] m_vertexVBO;
+  int[] m_edgeVBO;
   int[] m_colorVBO;
 
   //  ==================================== OFFSET ====================================
@@ -913,15 +913,13 @@ class Mesh {
   }; // draws all border edges
 
   void showEdges () {
-    for (int c=0; c<nc; c++)
-    {
-      drawEdge(c);
-    }
+    drawVBOEdge();
   };
   
   void drawEdge(int c) {
     //show(g(p(c)), g(n(c)));
   };  // draws edge of t(c) opposite to corner c
+  
   void drawSilhouettes() {
     for (int c=0; c<nc; c++) if (c<o(c) && frontFacing(t(c))!=frontFacing(t(o(c)))) drawEdge(c);
   }  
@@ -1005,10 +1003,29 @@ class Mesh {
    gl.glEnd();
    pgl.endGL();
   }
+ 
+   void drawVBOEdge()
+  { 
+    stroke(black);
+    
+    pgl.beginGL();
+
+    gl.glEnableClientState( GL.GL_VERTEX_ARRAY );
+
+    gl.glBindBuffer( GL.GL_ARRAY_BUFFER, m_edgeVBO[0] );
+    gl.glVertexPointer(3, GL.GL_FLOAT, 0, 0);
+
+    gl.glDrawArrays( GL.GL_LINES, 0, 6 * nc );
+
+    gl.glBindBuffer( GL.GL_ARRAY_BUFFER, 0);
+    gl.glDisableClientState(GL.GL_VERTEX_ARRAY);
+    pgl.endGL();
+  }
   
   void drawVBO()
   { 
     pgl.beginGL();
+
     gl.glEnableClientState( GL.GL_VERTEX_ARRAY );
     gl.glEnableClientState(GL.GL_COLOR_ARRAY);
 
@@ -1026,86 +1043,21 @@ class Mesh {
     pgl.endGL();
   }
   
-  void showTriangles(Boolean front, int opacity, float shrunk) {
-    //drawVBO();
-    /*for (int t=0; t<nt; t++) {
-      if (V[3*t] == -1) continue;    //Handle base mesh compacted triangles      
-      if (!vis[tm[t]] || frontFacing(t)!=front || !visible[t]) continue;
-      if (!frontFacing(t)&&showBack) {
-        fill(blue); 
-        shade(t); 
-        continue;
-      }
-      if (m_triangleColorMap != null)
-      {
-        fill(m_triangleColorMap[tm[t]]);
-      }
-      else
-      {
-        //if(tm[t]==1) continue; 
-        //if(tm[t]==1&&!showMiddle || tm[t]==0&&!showLeft || tm[t]==2&&!showRight) continue; 
-        if (tm[t]==0) fill(cyan, opacity); 
-        if (tm[t]==1) fill(brown, opacity); 
-        if (tm[t]==2) fill(orange, opacity); 
-        if (tm[t]==3) fill(cyan, opacity); 
-        if (tm[t]==4) fill(magenta, opacity); 
-        if (tm[t]==5) fill(green, opacity); 
-        if (tm[t]==6) fill(blue, opacity); 
-        if (tm[t]==7) fill(#FAAFBA, opacity); 
-        if (tm[t]==8) fill(blue, opacity); 
-        if (tm[t]==9)
-        {
-          if (cm2[t] == 0)
-          {
-            fill(yellow, opacity); 
-          }
-          else if (cm2[t] == 1)
-          {
-            fill(blue, opacity); 
-          }
-          else if (cm2[t] == 2)
-          {
-            fill(magenta, opacity);
-          }
-          else
-          {
-            fill(brown, opacity);
-          }
-        }
-        
-        
-        if (tm[t]==10) fill(cyan, opacity); 
-        if (tm[t]==11) fill(brown, opacity); 
-        if (tm[t]==12) fill(orange, opacity); 
-        if (tm[t]==13) fill(cyan, opacity); 
-        if (tm[t]==14) fill(magenta, opacity); 
-        if (tm[t]==15) fill(green, opacity); 
-        if (tm[t]==16) fill(blue, opacity); 
-        if (tm[t]==17) fill(#FAAFBA, opacity); 
-        if (tm[t]==18) fill(blue, opacity); 
-        if (tm[t]==19) fill(yellow, opacity); 
-      }    
-      if (vis[tm[t]]) {
-        if (m_drawingState.m_shrunk != 0) showShrunkT(t, m_drawingState.m_shrunk); 
-        else shade(t);
-      }
-    }*/
+  void showTriangles(Boolean front, int opacity, float shrunk)
+  {
+    drawVBO();
   }
 
   void showBackTriangles() {
     /*for (int t=0; t<nt; t++) if (!frontFacing(t)) shade(t);*/
   };  
+  
   void showMarkedTriangles() {
     for (int t=0; t<nt; t++) if (visible[t]&&Mt[t]!=0) {
       fill(ramp(Mt[t], rings)); 
       showShrunkOffsetT(t, 1, 1);
     }
   };
-  
-  void initDisplayList()
-  {
-    showTriangles(true, 255, m_drawingState.m_shrunk);
-  }
 
   // ********************************************************* DRAW *****************************************************
   void draw()
@@ -1115,20 +1067,6 @@ class Mesh {
       showCorner(m_valence2Corner, 10);
     }
     
-    if (m_fQuickDraw)
-    {
-      if (m_displayList == -1)
-      {
-        m_displayList = gl.glGenLists(1);
-        gl.glNewList(m_displayList, gl.GL_COMPILE);
-        initDisplayList();
-        gl.glEndList();
-      }
-      pgl.beginGL();
-      gl.glCallList( m_displayList );
-      pgl.endGL();
-    }
-    else
     {
       noStroke();
       if (m_drawingState.m_fPickingBack)
@@ -1189,7 +1127,6 @@ class Mesh {
   {       
     // -------------------------------------------------------- display picked points and triangles ----------------------------------   
     fill(163, 73, 164); 
-    if (!m_fQuickDraw)
     {
       showSOT(); // shoes triangle t(cc) shrunken
       showcc();  // display corner markers: seed sc (green),  current cc (red)
@@ -1933,9 +1870,9 @@ class Mesh {
       V[3*k]=a;  
       V[3*k+1]=b;  
       V[3*k+2]=c;
-      //V[3*k]=a-1;  
-      //V[3*k+1]=b-1;  
-      //V[3*k+2]=c-1;
+      /*V[3*k]=a-1;  
+      V[3*k+1]=b-1;  
+      V[3*k+2]=c-1;*/
     }
     initVBO();
   };
@@ -2013,6 +1950,7 @@ class Mesh {
   {
     m_vertexVBO = new int[1];
     m_colorVBO = new int[1];
+    m_edgeVBO = new int[1];
 
     FloatBuffer geometry = FloatBuffer.allocate( 3 * nc );
     for (int i = 0; i < nc; i++)
@@ -2022,14 +1960,32 @@ class Mesh {
       geometry.put(G[V[i]].z);
     }
     geometry.rewind();
-   
+    
+    FloatBuffer edgeGeometry = FloatBuffer.allocate( 2 * 3 * nc );
+    for (int i = 0; i < nc; i++)
+    {
+      edgeGeometry.put(G[V[i]].x);
+      edgeGeometry.put(G[V[i]].y);
+      edgeGeometry.put(G[V[i]].z);
+
+      int j = 1;
+      if ( (i+1) % 3 == 0 )
+      {
+        j = -2;
+      }
+      edgeGeometry.put(G[V[i+j]].x);
+      edgeGeometry.put(G[V[i+j]].y);
+      edgeGeometry.put(G[V[i+j]].z);
+    }
+    edgeGeometry.rewind();
+  
     ByteBuffer col = ByteBuffer.allocate( 4 * nc );
     for (int i = 0; i < nc; i++)
     {
       byte zero = 0;
       byte maxi = (byte)(255 & 0xff);
-      col.put(zero);
       col.put(maxi);
+      col.put(zero);
       col.put(zero);
       col.put(maxi);
     }
@@ -2040,6 +1996,11 @@ class Mesh {
     gl.glBindBuffer( GL.GL_ARRAY_BUFFER, m_vertexVBO[0] );
     gl.glBufferData( GL.GL_ARRAY_BUFFER, 3 * 4 * nc, geometry, GL.GL_STATIC_DRAW );
     
+    pgl.beginGL();
+    gl.glGenBuffers( 1, m_edgeVBO, 0 );
+    gl.glBindBuffer( GL.GL_ARRAY_BUFFER, m_edgeVBO[0] );
+    gl.glBufferData( GL.GL_ARRAY_BUFFER, 2 * 3 * 4 * nc, edgeGeometry, GL.GL_STATIC_DRAW );
+
     gl.glGenBuffers( 1, m_colorVBO, 0 );
     gl.glBindBuffer( GL.GL_ARRAY_BUFFER, m_colorVBO[0] );
     gl.glBufferData( GL.GL_ARRAY_BUFFER, 4 * 4 * nc, col, GL.GL_DYNAMIC_DRAW );
@@ -2049,6 +2010,7 @@ class Mesh {
     pgl.endGL();
 
     geometry.clear();
+    edgeGeometry.clear();
     col.clear();
   }
 

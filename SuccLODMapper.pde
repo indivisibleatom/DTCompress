@@ -1,4 +1,4 @@
-int NUMLODS = 7;
+int NUMLODS = 2;
 
 class SuccLODMapperManager
 {

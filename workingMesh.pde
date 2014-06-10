@@ -45,9 +45,9 @@ class WorkingMesh extends Mesh
     m_userInputHandler = new WorkingMeshUserInputHandler(this);
     m_packetFetcher = new PacketFetcher(lodMapperManager);
     m_triangleColorMap = new int[10];
-    m_triangleColorMap[0] = green;
-    m_triangleColorMap[1] = yellow;
-    m_triangleColorMap[2] = red;
+    m_triangleColorMap[0] = formColor(green, 255);
+    m_triangleColorMap[1] = formColor(yellow, 255);
+    m_triangleColorMap[2] = formColor(red, 255);
 
     for (int i = 0; i < m.nt; i++)
     {
@@ -62,9 +62,18 @@ class WorkingMesh extends Mesh
       m_birthAge[i] = NUMLODS - 1;
       m_deathAge[i] = future.orderV();
       m_descendedFrom[i] = i;
-    }
+    }   
   }
   
+  void initWorkingMesh()
+  {
+    resetMarkers();
+    markTriangleAges();
+    markExpandableVerts();
+    computeBox();
+    updateColorsVBO(255);
+  }
+
   void markTriangleAges()
   {
      /*for (int i = 0; i < nc; i++)

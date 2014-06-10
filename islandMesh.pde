@@ -99,47 +99,5 @@ class IslandMesh extends Mesh
   
  void showTriangles(Boolean front, int opacity, float shrunk) {
    drawVBO();  
-    /*for (int t=0; t<nt; t++) {
-      if (V[3*t] == -1) continue;    //Handle base mesh compacted triangles      
-      if (!vis[tm[t]] || frontFacing(t)!=front || !visible[t]) continue;
-      if (!frontFacing(t)&&showBack) {
-        fill(blue); 
-        shade(t); 
-        continue;
-      }
-      if (tm[t]==0) fill(red, opacity); 
-      if (tm[t]==1) fill(brown, opacity); 
-      if (tm[t]==2) fill(orange, opacity); 
-      if (tm[t]==3) fill(cyan, opacity); 
-      if (tm[t]==4) fill(magenta, opacity); 
-      if (tm[t]==5) fill(green, opacity); 
-      if (tm[t]==6) fill(blue, opacity); 
-      if (tm[t]==7) fill(#FAAFBA, opacity); 
-      if (tm[t]==8) fill(blue, opacity); 
-      if (tm[t]==9)
-      {
-        if (cm2[t] == 0)
-        {
-          fill(green, opacity); 
-        }
-        else if (cm2[t] == 1)
-        {
-          fill(yellow, opacity); 
-        }
-        else if (cm2[t] == 2)
-        {
-          fill(magenta, opacity);
-        }
-        else
-        {
-          fill(blue, opacity);
-        }
-      }
-        
-      if (vis[tm[t]]) {
-        if (m_drawingState.m_shrunk != 0) showShrunkT(t, m_drawingState.m_shrunk); 
-        else shade(t);
-      }
-    }*/
-  }
+ }
 }

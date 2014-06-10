@@ -519,12 +519,13 @@ class IslandCreator
     {
       createIslandsHeuristic();
     }
-    m_mesh.updateColorsVBO();
+    m_mesh.updateColorsVBO(255);
   }
-   
+
   void createIslandsHeuristic()
   {
-    print("Here\n");
+    long startTime = millis();
+    print("Start time island creation " + startTime + "\n");
     LOD++;
     m_mesh.resetMarkers();
   
@@ -588,7 +589,9 @@ class IslandCreator
    {
      m_mesh.vm[i] = 0;
    }
-   print("Done creating islands \n");
+   long endTime = millis();
+   print("End time for island creation " + endTime + "\n");
+   print("Time for island creation " + (endTime - startTime) + "\n");
   }
  
   void createIslandsRegionGrow()
