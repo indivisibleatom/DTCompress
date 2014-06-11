@@ -395,7 +395,7 @@ class WorkingMesh extends Mesh
   
   void expandMesh()
   {
-    print("Expanding mesh " + nv + "\n");
+    FunctionProfiler profiler = new FunctionProfiler();
     int currentLODWave = NUMLODS - 1;
     boolean[] expandArray;
     int[] cornerForVertex;
@@ -495,6 +495,9 @@ class WorkingMesh extends Mesh
       print("Debug " + numVertices + " " + sizeSplitBitsArray + "\n");
       print("Expanded one level. New number of vertices " + nv + "\n");
     }
+    
+    profiler.done();
+    onDoneExpand();
     print("Total bits per vertex " + totalBitsNothing + " " + (float)totalBitsNothing/g_totalVertices + "\n");
     print("Total bits per vertex " + totalBits + " " + (float)totalBits/g_totalVertices + "\n");
     print("Total bits per choose " + totalBitsChoose + " " + (float)totalBitsChoose/g_totalVertices + "\n");
@@ -575,6 +578,7 @@ class WorkingMesh extends Mesh
 
   void expandRegion(int corner)
   {
+    FunctionProfiler profiler = new FunctionProfiler();
     int vertexToExpand = v(corner);
 
     int currentLODWave = NUMLODS - 1;
@@ -603,7 +607,6 @@ class WorkingMesh extends Mesh
       
       //Mark the region to be expanded
       expandedCorners = new ArrayList<Integer>();
-      print("Size of descendedCorners " + descendedCorners.size() + "\n");
       for (int i:descendedCorners)
       {
         checkDebugNotEqual( inRegion[v(i)], true , "WorkingMesh::expandRegion => Error!! Original is already expanded!!\n", LOW );
@@ -614,9 +617,9 @@ class WorkingMesh extends Mesh
       if ( currentLODWave > 0 )
       {
         expandedCorners = expandInRegion( expandedCorners, currentLODWave, inRegion );
+        print("Size of expanded region " + expandedCorners.size() + " ring size " + currentLODWave + "\n");
       }
       setRegion(inRegion);
-      print("Size of expanded region " + expandedCorners.size() + " ring size " + currentLODWave + "\n");
  
       int numValidExpandable = 0;
       
@@ -706,9 +709,12 @@ class WorkingMesh extends Mesh
       }
       
       currentLODWave--;
-      print("Debug " + numVertices + " " + sizeSplitBitsArray + "\n");
+      print("Size of descendedCorners " + descendedCorners.size() + "\n");
       print("Expanded one level. New number of vertices " + nv + "\n");
     }
+    
+    profiler.done();
+    onDoneExpand();
     int countVerticesComplete = 0;
     for (int i = 0; i < nv; i++)
     {
@@ -761,6 +767,15 @@ class WorkingMesh extends Mesh
         stitch( v(corner), result, lod, orderV, ct );
       }
     }
+    onDoneExpand();
+  }
+  
+  void onDoneExpand()
+  {
+    //markExpandableVerts();
+    
+    initVBO(1);
+    updateColorsVBO(255);
   }
 
   void stitch( int currentV, pt[] g, int currentLOD, int currentOrderV, int[] ct )
@@ -846,28 +861,6 @@ class WorkingMesh extends Mesh
     O[offsetCorner+7] = offsetCorner;
     O[offsetCorner+10] = offsetCorner+1;
     O[offsetCorner+4] = offsetCorner+2;
-    
-    markExpandableVerts();
-    
-    initVBO(1);
-    updateColorsVBO(255);
-   
-    //Recolor expanded vertex
-    //colorCorrect( offsetCorner );
-  }
-  
-  void colorCorrect( int corner )
-  {
-    int currentCorner = corner;
-    do
-    {
-      int swingCorner = currentCorner;
-      do
-      {
-        swingCorner = s(swingCorner);
-      } while (swingCorner != currentCorner);
-      currentCorner = n(currentCorner);
-    } while (currentCorner != corner);
   }
 }
 
