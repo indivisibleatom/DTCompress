@@ -343,14 +343,12 @@ class WorkingMesh extends Mesh
   
   private int populateSplitBitsArray( boolean[] splitArray, int currentLODWave, int corner, int[] corners, int sizeCornersArray, int sizeSplitBitsArray )
   {
-    print("Here0 " + sizeCornersArray + "\n");
     int[] ct = getExpansionCornerNumbers(currentLODWave, corner);
     for (int i = 0; i < 3; i++)
     {
       corners[sizeCornersArray+i] = ct[i];
     }
     
-    print("Here1\n");
     int currentCorner = corner;
     int numSplitEdges = 0;
     int count=0;
@@ -370,7 +368,6 @@ class WorkingMesh extends Mesh
       currentCorner = s(currentCorner);
     }
     while (currentCorner != corner && numSplitEdges != 3);
-    print("Here2\n");
     if (DEBUG && DEBUG_MODE >= LOW)
     {
       if ( numSplitEdges != 3 )
@@ -378,7 +375,6 @@ class WorkingMesh extends Mesh
         print("workingMesh::populateSplitBitsArray - number of splitBits is not 3! " + currentLODWave + " " + v(corner) + "\n");
       }
     }
-    print("Here3\n");
     return count;
   }
   
@@ -610,6 +606,7 @@ class WorkingMesh extends Mesh
       print("Size of descendedCorners " + descendedCorners.size() + "\n");
       for (int i:descendedCorners)
       {
+        checkDebugNotEqual( inRegion[v(i)], true , "WorkingMesh::expandRegion => Error!! Original is already expanded!!\n", LOW );
         inRegion[v(i)] = true;
         expandedCorners.add(i);
       }
@@ -619,7 +616,7 @@ class WorkingMesh extends Mesh
         expandedCorners = expandInRegion( expandedCorners, currentLODWave, inRegion );
       }
       setRegion(inRegion);
-      print("Size of expanded region " + expandedCorners.size() + "\n");
+      print("Size of expanded region " + expandedCorners.size() + " ring size " + currentLODWave + "\n");
  
       int numValidExpandable = 0;
       
@@ -695,6 +692,7 @@ class WorkingMesh extends Mesh
       for (int i:expandedCorners)
       {
         int vertex = v(i);
+        int cornerInit = nc;
         if ( expandArray[vertex] && m_birthLOD[vertex] >= currentLODWave )
         {
           addIfDescendedFromOriginalVertex( i, descendedCorners );
@@ -726,20 +724,21 @@ class WorkingMesh extends Mesh
   
   void addIfDescendedFromOriginalVertex( int corner, ArrayList<Integer> descendedCorners )
   {
-    boolean fAddToDescended = false;
-    for (int j:descendedCorners)
+    int indexToRemoveFrom = -1;
+    for (int j = 0; j < descendedCorners.size(); j++)
     {
-      if ( corner == j )
+      if ( corner == descendedCorners.get(j) )
       {
-        fAddToDescended = true;
+        indexToRemoveFrom =  j;
         break;
       }
     }
     //Add first two corners that would be added post stitch (as there are the corners corresponding to newly added vertices v1 and v2
-    if ( fAddToDescended )
+    if ( indexToRemoveFrom != -1 )
     {
       descendedCorners.add( nc );
       descendedCorners.add( nc+1 );
+      descendedCorners.set( indexToRemoveFrom, nc+2 );
     }
   }
 
