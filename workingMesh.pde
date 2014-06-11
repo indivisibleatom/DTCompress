@@ -69,20 +69,11 @@ class WorkingMesh extends Mesh
   {
     initVBO(1);
     resetMarkers();
-    markTriangleAges();
     markExpandableVerts();
     computeBox();
     updateColorsVBO(255);
   }
 
-  void markTriangleAges()
-  {
-     /*for (int i = 0; i < nc; i++)
-    {
-      tm[t(i)] = m_LOD[v(i)] + 1;
-    }*/
-  }
-  
   private FutureLODAndVOrder getLODAndVAge( int lod, int orderV )
   {
     while ( lod >= 0 )
@@ -623,7 +614,7 @@ class WorkingMesh extends Mesh
  
       int numValidExpandable = 0;
       
-      if ( DEBUG && DEBUG_MODE >= LOW )
+      if ( DEBUG && DEBUG_MODE >= VERBOSE )
       {
         for (int i = 0; i < expandedCorners.size() - 1;i++)
         {
@@ -661,7 +652,7 @@ class WorkingMesh extends Mesh
         }
       }
       
-      print("Num valid to be expanded possibly " + numValidExpandable+ " Num expandable " + numExpandable + "\n");
+      print("Num valid to be expanded possibly " + numValidExpandable + " Num expandable " + numExpandable + "\n");
 
       int[] corners = new int[3*numExpandable];
       int sizeSplitBitsArray = 0;
@@ -772,7 +763,7 @@ class WorkingMesh extends Mesh
   
   void onDoneExpand()
   {
-    //markExpandableVerts();
+    markExpandableVerts();
     
     initVBO(1);
     updateColorsVBO(255);

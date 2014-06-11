@@ -129,6 +129,7 @@ class SimplificationController
           m_workingMesh = new WorkingMesh( m_baseMesh, m_lodMapperManager );
           m_workingMeshClient = new WorkingMeshClient( m_baseMesh, m_workingMesh );
           m_workingMesh.initWorkingMesh();
+          m_workingMeshClient.initWorkingMesh();
 
           m_workingMeshClient.resetMarkers();
           m_workingMeshClient.computeBox();
@@ -172,7 +173,6 @@ class SimplificationController
         m_workingMesh = new WorkingMesh( m_baseMesh, m_lodMapperManager );
         m_workingMeshClient = new WorkingMeshClient( m_baseMesh, m_workingMesh );
         m_workingMesh.resetMarkers();
-        m_workingMesh.markTriangleAges();
         m_workingMesh.markExpandableVerts();
         m_workingMesh.computeBox();
 
