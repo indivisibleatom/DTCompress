@@ -26,8 +26,8 @@ class SimplificationController
     m_islandMesh = new IslandMesh(); 
     m_lodMapperManager = new SuccLODMapperManager();
     m_baseMesh = null;
-    m_islandMesh.loadMeshVTS("data/bigHorse.vts", 1);
-    //m_islandMesh.loadMeshVTS("data/angel.vts", 100);
+    //m_islandMesh.loadMeshVTS("data/bigHorse.vts", 1);
+    m_islandMesh.loadMeshVTS("data/angel.vts", 100);
     g_totalVertices = m_islandMesh.nv;
     checkCorrect();
     m_islandMesh.updateON(); // computes O table and normals

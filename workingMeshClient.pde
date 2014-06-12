@@ -12,6 +12,7 @@ class WorkingMeshClient extends Mesh
 
   WorkingMeshClient(Mesh m, WorkingMesh w)
   {
+    reserveSpace();
     m.copyTo(this);
     nv = m.nv;
     nt = m.nt;
@@ -46,6 +47,26 @@ class WorkingMeshClient extends Mesh
     //markExpandableVerts();
     computeBox();
     updateColorsVBO(255);
+  }
+  
+  void reserveSpace()
+  {
+    nv = maxnv;
+    nt = maxnt; 
+    nc=3*nt;
+
+    // primary tables
+    V = new int [3*nt];               // V table (triangle/vertex indices)
+    O = new int [3*nt];               // O table (opposite corner indices)
+    G = new pt [nv];                   // geometry table (vertices)
+  
+    // auxiliary tables for bookkeeping
+    cm = new int[3*nt];               // corner markers: 
+    vm = new int[nv];               // vertex markers: 0=not marked, 1=interior, 2=border, 3=non manifold
+    tm = new int[nt];               // triangle markers: 0=not marked, 
+    cm2 = new int[nt];               // triangle markers: 0=not marked, 
+
+    visible = new boolean[nt];    // set if triangle visible
   }
   
   private int findSmallestExpansionCorner( Boolean[] expansionBits, int startPosition, int corner )

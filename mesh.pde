@@ -101,6 +101,7 @@ class Mesh {
     cm2 = new int[triangleCount];               // triangle markers: 0=not marked, 
 
     visible = new boolean[triangleCount];    // set if triangle visible
+    m_tOffsets = new int[triangleCount]; //Storing the T offsets for propagating down LOD's. TODO msati3: better approach?
   }
 
   void setMeshNumber( int meshNumber )
@@ -1378,7 +1379,6 @@ class Mesh {
       comma2=rest.indexOf(' ');  
       b=int(rest.substring(0, comma2)); 
       c=int(rest.substring(comma2+1));
-      //      V[3*k]=a-1;  V[3*k+1]=b-1;  V[3*k+2]=c-1;                           // original
       V[3*k]=a-1;  
       V[3*k+1]=c-1;  
       V[3*k+2]=b-1;                           // swaped order
