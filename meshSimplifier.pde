@@ -8,7 +8,7 @@ class MeshSimplifier
   MeshSimplifier( IslandMesh m )
   {
     m_mesh = m;
-    m_oldVertexToNew = new int[m_mesh.maxnv];
+    m_oldVertexToNew = new int[m_mesh.nv];
     m_createdMesh = new Mesh();
     m_vertexInfo = new ArrayList<VertexInfo>();
   }

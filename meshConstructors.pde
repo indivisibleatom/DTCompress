@@ -15,7 +15,7 @@ class CuboidConstructor
     m_triangleSize = triangleSize;
 
     m_mesh = new IslandMesh();
-    m_mesh.declareVectors();  
+    //m_mesh.declareVectors();  
   }
   
   public void constructMesh()

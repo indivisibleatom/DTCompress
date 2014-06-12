@@ -74,10 +74,9 @@ class MeshUserInputHandler
     
     // mesh edits, smoothing, refinement
     //if(key=='v') m_mesh.flip(); // clip edge opposite to M.cc
-    if(key=='F') {m_mesh.smoothen(); m_mesh.normals();}
-    if(key=='Y') {m_mesh.refine(); m_mesh.makeAllVisible(); g_totalVertices = m_mesh.nv;}
+    //if(key=='Y') {m_mesh.refine(); m_mesh.makeAllVisible(); g_totalVertices = m_mesh.nv;}
     if(key=='d') {m_mesh.clean();}
-    if(key=='o') m_mesh.offset();
+    //if(key=='o') m_mesh.offset();
 
     if(key=='u') {m_mesh.resetMarkers(); m_mesh.makeAllVisible(); } // undo deletions
     if(key=='B') showBack=!showBack;

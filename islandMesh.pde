@@ -11,8 +11,6 @@ int ISLAND = 9;
 
 class IslandMesh extends Mesh
 {
- int[] cm2 = new int[3*maxnt];
-  
  IslandMesh()
  {
    m_userInputHandler = new IslandMeshUserInputHandler(this);
@@ -27,8 +25,15 @@ class IslandMesh extends Mesh
    nt = m.nt;
    nc = m.nc;
    
-   /*m_vertexVBO = m.m_vertexVBO;
-   m_colorVBO = m.m_colorVBO;*/
+   // auxiliary tables for bookkeeping
+   cm = m.cm;
+   vm = m.vm;
+   tm = m.tm;
+   cm2 = m.cm2;
+
+   visible = m.visible;  
+   m_tOffsets = m.m_tOffsets;
+
    initVBO();
    
    m_userInputHandler = new IslandMeshUserInputHandler(this);

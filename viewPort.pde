@@ -95,12 +95,6 @@ class Viewport
       if (keyPressed&&key=='x') {
         selectedMesh.add(float(mouseX-pmouseX), I).add(float(mouseY-pmouseY), K);
       }  // move selected vertex in X/Z screen plane
-      if (keyPressed&&key=='W') {
-        selectedMesh.addROI(float(mouseX-pmouseX), I).addROI(-float(mouseY-pmouseY), J);
-      } // move selected vertex in screen plane
-      if (keyPressed&&key=='X') {
-        selectedMesh.addROI(float(mouseX-pmouseX), I).addROI(float(mouseY-pmouseY), K);
-      }  // move selected vertex in X/Z screen plane 
 
       //Rotate viewport's view
       if (!keyPressed) {

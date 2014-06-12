@@ -1,5 +1,8 @@
 float g_roiSize = 2500;
 
+int maxnv = 100000;
+int maxnt = 2*maxnv;
+
 class FutureLODAndVOrder
 {
   private int m_order;
@@ -31,10 +34,11 @@ class WorkingMesh extends Mesh
   int m_baseTriangles;
   int m_baseVerts;
 
-  PacketFetcher m_packetFetcher;
+  PacketFetcher m_packetFetcher;  
 
   WorkingMesh( Mesh m, SuccLODMapperManager lodMapperManager )
   {
+    reserveSpace();
     m.copyTo(this);
     
     m_expandBits = new ArrayList<Boolean>();
@@ -63,6 +67,26 @@ class WorkingMesh extends Mesh
       m_deathAge[i] = future.orderV();
       m_descendedFrom[i] = i;
     }   
+  }
+  
+  void reserveSpace()
+  {
+    nv = maxnv;
+    nt = maxnt; 
+    nc=3*nt;
+
+    // primary tables
+    V = new int [3*nt];               // V table (triangle/vertex indices)
+    O = new int [3*nt];               // O table (opposite corner indices)
+    G = new pt [nv];                   // geometry table (vertices)
+  
+    // auxiliary tables for bookkeeping
+    cm = new int[3*nt];               // corner markers: 
+    vm = new int[nv];               // vertex markers: 0=not marked, 1=interior, 2=border, 3=non manifold
+    tm = new int[nt];               // triangle markers: 0=not marked, 
+    cm2 = new int[nt];               // triangle markers: 0=not marked, 
+
+    visible = new boolean[nt];    // set if triangle visible
   }
   
   void initWorkingMesh()

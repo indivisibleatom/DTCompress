@@ -39,59 +39,28 @@ class DrawingState
 class Mesh {
   //  ==================================== Internal variables ====================================
   // max sizes, counts, selected corners
-  //5500
-  int maxnv = 50000;                         //  max number of vertices
-  //int maxnv = 1000000;                         //  max number of vertices
-  int maxnt = maxnv*2;                       // max number of triangles
   int nv = 0;                              // current  number of vertices
   int nt = 0;                   // current number of triangles
   int nc = 0;                                // current number of corners (3 per triangle)
-  int nvr=0, ntr=0, ncr=0; // remember state to restore
   int cc=0, pc=0, sc=0;                      // current, previous, saved corners
   float vol=0, surf=0;                      // vol and surface
   int m_meshNumber;
 
-  //Display list related
-  int m_displayList = -1;
-
   // primary tables
-  int[] V = new int [3*maxnt];               // V table (triangle/vertex indices)
-  int[] O = new int [3*maxnt];               // O table (opposite corner indices)
-  pt[] G = new pt [maxnv];                   // geometry table (vertices)
-  pt[] baseG = new pt [maxnv];               // to store the locations of the vertices in their contracted form
-
-  vec[] Nv = new vec [maxnv];                 // vertex normals or laplace vectors
-  vec[] Nt = new vec [maxnt];                // triangles normals
-
+  int[] V;
+  int[] O;
+  pt[] G;
+  
   // auxiliary tables for bookkeeping
-  int[] cm = new int[3*maxnt];               // corner markers: 
-  int[] vm = new int[maxnv];               // vertex markers: 0=not marked, 1=interior, 2=border, 3=non manifold
-  int[] tm = new int[maxnt];               // triangle markers: 0=not marked, 
-  int[] cm2 = new int[maxnt];               // triangle markers: 0=not marked, 
+  int[] cm;
+  int[] vm;
+  int[] tm;
+  int[] cm2;
 
-  // other tables
-  int[] Mv = new int[maxnv];                  // vertex markers
-  int [] Valence = new int [maxnv];          // vertex valence (count of incident triangles)
-
-  int[] Mt = new int[maxnt];                 // triangle markers for distance and other things   
-  boolean [] VisitedT = new boolean [maxnt];  // triangle visited
-  boolean[] visible = new boolean[maxnt];    // set if triangle visible
+  boolean[] visible;
   boolean[] m_selectedRegion;
 
-  int[] W = new int [3*maxnt];               // mid-edge vertex indices for subdivision (associated with corner opposite to edge)
-
-  pt[] G2 = new pt [maxnv]; //2008-03-06 JJ misc
-  boolean [] Border = new boolean [maxnv];   // vertex is border
-  boolean [] VisitedV = new boolean [maxnv];  // vertex visited
   int r=2;                                // radius of spheres for displaying vertices
-  float [] distance = new float [maxnv];
-  // geodesic
-  boolean  showPath=false, showDistance=false;  
-  boolean[] P = new boolean [3*maxnt];       // marker of corners in a path to parent triangle for tracing back the paths
-  int[] Distance = new int[maxnt];           // triangle markers for distance fields 
-  int[] SMt = new int[maxnt];                // sum of triangle markers for isolation
-  int prevc = 0;                             // previously selected corner
-  int rings=2;                               // number of rings for colorcoding
   Viewport m_viewport;                       // the viewport the mesh is registered to
 
   // box
@@ -105,22 +74,12 @@ class Mesh {
 
   //wrapper class providing utilities to meshes
   MeshUtils m_utils = new MeshUtils(this);
-  int[] m_tOffsets = new int[maxnt]; //Storing the T offsets for propagating down LOD's. TODO msati3: better approach?
+  int[] m_tOffsets;
   int[] m_triangleColorMap = null; //Control of triangle coloring possible from here
   int[] m_vertexVBO;
   int[] m_edgeVBO;
   int[] m_colorVBO;
 
-  //  ==================================== OFFSET ====================================
-  void offset() {
-    normals();
-    float d=rbox/100;
-    for (int i=0; i<nv; i++) G[i]=P(G[i], d, Nv[i]);
-  }
-  void offset(float d) {
-    normals();
-    for (int i=0; i<nv; i++) G[i]=P(G[i], d, Nv[i]);
-  }
   //  ==================================== INIT, CREATE, COPY ====================================
   Mesh() 
   {
@@ -135,33 +94,13 @@ class Mesh {
     O = new int [3*triangleCount];               // O table (opposite corner indices)
     G = new pt [vertexCount];                   // geometry table (vertices)
 
-    Nv = new vec [maxnv];                 // vertex normals or laplace vectors
-    Nt = new vec [maxnt];                // triangles normals
-
     // auxiliary tables for bookkeeping
-    cm = new int[3*maxnt];               // corner markers: 
-    vm = new int[maxnv];               // vertex markers: 0=not marked, 1=interior, 2=border, 3=non manifold
-    tm = new int[maxnt];               // triangle markers: 0=not marked, 
-    cm2 = new int[maxnt];               // triangle markers: 0=not marked, 
+    cm = new int[3*triangleCount];               // corner markers: 
+    vm = new int[vertexCount];               // vertex markers: 0=not marked, 1=interior, 2=border, 3=non manifold
+    tm = new int[triangleCount];               // triangle markers: 0=not marked, 
+    cm2 = new int[triangleCount];               // triangle markers: 0=not marked, 
 
-    // other tables
-    Mv = null;
-    Valence = null;
-
-    Mt = null;                 // triangle markers for distance and other things   
-    VisitedT = null;  // triangle visited
     visible = new boolean[triangleCount];    // set if triangle visible
-    W = null;          // mid-edge vertex indices for subdivision (associated with corner opposite to edge)
-    if ( !fSubdivide )
-    {
-      G2 = null; //2008-03-06 JJ misc
-    }
-    Border = null;   // vertex is border
-    VisitedV = null;  // vertex visited
-    distance = null;
-    P = null;       // marker of corners in a path to parent triangle for tracing back the paths
-    Distance = null;           // triangle markers for distance fields 
-    SMt = null;                // sum of triangle markers for isolation
   }
 
   void setMeshNumber( int meshNumber )
@@ -180,27 +119,15 @@ class Mesh {
   }
 
   void declareVectors() {
-    for (int i=0; i<maxnv; i++) {
+    for (int i=0; i<nv; i++) {
       G[i]=P(); 
-      Nv[i]=V();
     };   // init vertices and normals
-    for (int i=0; i<maxnt; i++) Nt[i]=V();       // init triangle normals and skeleton lab els
   }
 
   void resetCounters() {
     nv=0; 
     nt=0; 
     nc=0;
-  }
-  void rememberCounters() {
-    nvr=nv; 
-    ntr=nt; 
-    ncr=nc;
-  }
-  void restoreCounters() {
-    nv=nvr; 
-    nt=ntr; 
-    nc=ncr;
   }
 
   void makeGrid (int w) { // make a 2D grid of w x w vertices
@@ -406,20 +333,6 @@ class Mesh {
     return P(g(c), triCenter(t(c)));
   };   // returns corner point
 
-  // normals fot t(c) (must be precomputed)
-  vec Nv (int c) {
-    return(Nv[V[c]]);
-  }; 
-  vec Nv() {
-    return Nv(cc);
-  }            // shortcut to get the normal of v(c) 
-  vec Nt (int c) {
-    return(Nt[t(c)]);
-  }; 
-  vec Nt() {
-    return Nt(cc);
-  }            // shortcut to get the normal of t(c) 
-
   // geometry for corner cc
   pt g() {
     return g(cc);
@@ -496,101 +409,7 @@ class Mesh {
     G[v(cc)].add(s, V); 
     return this;
   } // moves vertex of c to P
-  void move(int c) {
-    g(c).add(pmouseY-mouseY, Nv(c));
-  }
-  void move(int c, float d) {
-    g(c).add(d, Nv(c));
-  }
-  void move() {
-    move(cc); 
-    normals();
-  }
-
-  Mesh addROI(float s, vec V) { 
-    return addROI(64, s, V);
-  }
-  Mesh addROI(int d, float s, vec V) {
-    float md=setROI(d); 
-    for (int c=0; c<nc; c++) if (!VisitedV[v(c)]&&(Mv[v(c)]!=0))  G[v(c)].add(s*(1.-distance[v(c)]/md), V);   // moves ROI
-    smoothROI();
-    setROI(d*2); // marks ROI of d rings
-    smoothROI(); 
-    smoothROI();
-    return this;
-  }   
-
-  void tuckROI(float s) {
-    for (int i=0; i<nv; i++) if (Mv[i]!=0) G[i].add(s, Nv[i]);
-  };  // displaces each vertex by a fraction s of its normal
-  void smoothROI() {
-    computeLaplaceVectors(); 
-    tuckROI(0.5); 
-    computeLaplaceVectors(); 
-    tuckROI(-0.5);
-  };
-
-  float setROI(int n) { // marks vertices and triangles at a graph distance of maxr
-    float md=0;
-    int tc=0; // triangle counter
-    int r=1; // ring counter
-    for (int i=0; i<nt; i++) {
-      Mt[i]=0;
-    };  // unmark all triangles
-    Mt[t(cc)]=1; 
-    tc++;                   // mark t(cc)
-    for (int i=0; i<nv; i++) {
-      Mv[i]=0;
-    };  // unmark all vertices
-    while ( (tc<nt)&&(tc<n)) {  // while not finished
-      for (int i=0; i<nc; i++) {
-        if ((Mv[v(i)]==0)&&(Mt[t(i)]==r)) {
-          Mv[v(i)]=r; 
-          distance[v(i)]=d(g(cc), g(i)); 
-          md = max(md, distance[v(i)]);
-        };
-      };  // mark vertices of last marked triangles
-      for (int i=0; i<nc; i++) {
-        if ((Mt[t(i)]==0)&&(Mv[v(i)]==r)) {
-          Mt[t(i)]=r+1; 
-          tc++;
-        };
-      }; // mark triangles incident on last marked vertices
-      r++; // increment ring counter
-    };
-    rings=r;
-    return md;
-  }
-
-  //  ==========================================================  HIDE TRIANGLES ===========================================
-  void markRings(int maxr) { // marks vertices and triangles at a graph distance of maxr
-    int tc=0; // triangle counter
-    int r=1; // ring counter
-    for (int i=0; i<nt; i++) {
-      Mt[i]=0;
-    };  // unmark all triangles
-    Mt[t(cc)]=1; 
-    tc++;                   // mark t(cc)
-    for (int i=0; i<nv; i++) {
-      Mv[i]=0;
-    };  // unmark all vertices
-    while ( (tc<nt)&&(r<=maxr)) {  // while not finished
-      for (int i=0; i<nc; i++) {
-        if ((Mv[v(i)]==0)&&(Mt[t(i)]==r)) {
-          Mv[v(i)]=r;
-        };
-      };  // mark vertices of last marked triangles
-      for (int i=0; i<nc; i++) {
-        if ((Mt[t(i)]==0)&&(Mv[v(i)]==r)) {
-          Mt[t(i)]=r+1; 
-          tc++;
-        };
-      }; // mark triangles incident on last marked vertices
-      r++; // increment ring counter
-    };
-    rings=r; // sets ring variable for rendring?
-  }
-
+  
   void hide() {
     visible[t(cc)]=false; 
     if (!b(cc) && visible[t(o(cc))]) cc=o(cc); 
@@ -603,11 +422,6 @@ class Mesh {
       };
     };
   }
-  void purge(int k) {
-    for (int i=0; i<nt; i++) visible[i]=Mt[i]==k;
-  } // hides triangles marked as k
-
-
     // ============================================= GEOMETRY =======================================
 
   // enclosing box
@@ -831,20 +645,6 @@ class Mesh {
     showCorner(cc, 3);
   } // displays corner markers
 
-  void showLabels() { // displays IDs of corners, vertices, and triangles
-    fill(black); 
-    for (int i=0; i<nv; i++) {
-      show(G[i], "v"+str(i), V(10, Nv[i]));
-    }; 
-    for (int i=0; i<nc; i++) {
-      show(corner(i), "c"+str(i), V(10, Nt[i]));
-    }; 
-    for (int i=0; i<nt; i++) {
-      show(triCenter(i), "t"+str(i), V(10, Nt[i]));
-    }; 
-    noFill();
-  }
-
   // ============================================= DISPLAY VERTICES =======================================
   void showVertices() {
     noStroke(); 
@@ -933,17 +733,7 @@ class Mesh {
         vertex(g(3*t+1)); 
         vertex(g(3*t+2));  
         endShape(CLOSE);
-      }
-      else {
-        beginShape(); 
-        normal(Nv[v(3*t)]); 
-        vertex(g(3*t)); 
-        normal(Nv[v(3*t+1)]); 
-        vertex(g(3*t+1)); 
-        normal(Nv[v(3*t+2)]); 
-        vertex(g(3*t+2));  
-        endShape(CLOSE);
-      };
+      }      
   }
   
   // display shrunken and offset triangles
@@ -1051,9 +841,12 @@ class Mesh {
   };  
   
   void showMarkedTriangles() {
-    for (int t=0; t<nt; t++) if (visible[t]&&Mt[t]!=0) {
-      fill(ramp(Mt[t], rings)); 
-      showShrunkOffsetT(t, 1, 1);
+    for (int t=0; t<nt; t++) 
+    {
+      if (visible[t]) 
+      {
+        showShrunkOffsetT(t, 1, 1);
+      }
     }
   };
 
@@ -1103,7 +896,7 @@ class Mesh {
       }
       if (m_drawingState.m_fShowNormals)
       {
-        showNormals();
+        //showNormals();
       }
       if (m_drawingState.m_fShowEdges)
       {
@@ -1111,14 +904,6 @@ class Mesh {
         showEdges();
       }
     }
-    /*if (cc != -1)
-    {
-      pt centerSphere = g_centerSphere;
-      stroke(0,0,255,50);
-      translate( centerSphere.x, centerSphere.y, centerSphere.z );
-      sphere( 100 );
-      translate( -centerSphere.x, -centerSphere.y, -centerSphere.z );    
-    }*/
   }
 
   void drawPostPicking()
@@ -1213,51 +998,6 @@ class Mesh {
 
   //  ==========================================================  NORMALS ===========================================
   void normals() {
-    computeTriNormals(); 
-    computeVertexNormals();
-  }
-  void computeValenceAndResetNormals() {      // caches valence of each vertex
-    for (int i=0; i<nv; i++) {
-      Nv[i]=V();  
-      Valence[i]=0;
-    };  // resets the valences to 0
-    for (int i=0; i<nc; i++) {
-      Valence[v(i)]++;
-    };
-  }
-  vec triNormal(int t) { 
-    return N(V(g(3*t), g(3*t+1)), V(g(3*t), g(3*t+2)));
-  };  
-  void computeTriNormals() {
-    for (int i=0; i<nt; i++) {
-      Nt[i].set(triNormal(i));
-    };
-  };             // caches normals of all tirangles
-  void computeVertexNormals() {  // computes the vertex normals as sums of the normal vectors of incident tirangles scaled by area/2
-    for (int i=0; i<nv; i++) {
-      Nv[i].set(0, 0, 0);
-    };  // resets the valences to 0
-    for (int i=0; i<nc; i++) {
-      Nv[v(i)].add(Nt[t(i)]);
-    };
-    for (int i=0; i<nv; i++) {
-      Nv[i].normalize();
-    };
-  };
-  void showVertexNormals() {
-    for (int i=0; i<nv; i++) show(G[i], V(10*r, Nv[i]));
-  };
-  void showTriNormals() {
-    for (int i=0; i<nt; i++) show(triCenter(i), V(10*r, U(Nt[i])));
-  };
-  void showNormals() {
-    if (flatShading) showTriNormals(); 
-    else showVertexNormals();
-  }
-  vec normalTo(int m) {
-    vec N=V(); 
-    for (int i=0; i<nt; i++) if (tm[i]==m) N.add(triNormal(i)); 
-    return U(N);
   }
 
   //  ==========================================================  VOLUME ===========================================
@@ -1291,86 +1031,6 @@ class Mesh {
     if (visible[t]) return area(g(3*t), g(3*t+1), g(3*t+2)); 
     else return 0;
   };  
-
-  // ============================================================= SMOOTHING ============================================================
-  void computeLaplaceVectors() {  // computes the vertex normals as sums of the normal vectors of incident tirangles scaled by area/2
-    computeValenceAndResetNormals();
-    for (int i=0; i<3*nt; i++) {
-      Nv[v(p(i))].add(V(g(p(i)), g(n(i))));
-    };
-    for (int i=0; i<nv; i++) {
-      Nv[i].div(Valence[i]);
-    };
-  };
-  void tuck(float s) {
-    for (int i=0; i<nv; i++) G[i].add(s, Nv[i]);
-  };  // displaces each vertex by a fraction s of its normal
-  void smoothen() {
-    normals(); 
-    computeLaplaceVectors(); 
-    tuck(0.6); 
-    computeLaplaceVectors(); 
-    tuck(-0.6);
-  };
-
-  // ============================================================= SUBDIVISION ============================================================
-  int w (int c) {
-    return(W[c]);
-  };               // temporary indices to mid-edge vertices associated with corners during subdivision
-
-  void splitEdges() {            // creates a new vertex for each edge and stores its ID in the W of the corner (and of its opposite if any)
-    for (int i=0; i<3*nt; i++) {  // for each corner i
-      if (b(i)) {
-        G[nv]=P(g(n(i)), g(p(i))); 
-        W[i]=nv++;
-      }
-      else {
-        if (i<o(i)) {
-          G[nv]=P(g(n(i)), g(p(i))); 
-          W[o(i)]=nv; 
-          W[i]=nv++;
-        };
-      };
-    };
-  } // if this corner is the first to see the edge
-
-  void bulge() {              // tweaks the new mid-edge vertices according to the Butterfly mask
-    for (int i=0; i<3*nt; i++) {
-      if ((!b(i))&&(i<o(i))) {    // no tweak for mid-vertices of border edges
-        if (!b(p(i))&&!b(n(i))&&!b(p(o(i)))&&!b(n(o(i))))
-        {
-          G[W[i]].add(0.25, V(P(P(g(l(i)), g(r(i))), P(g(l(o(i))), g(r(o(i))))), (P(g(i), g(o(i))))));
-        };
-      };
-    };
-  };
-
-  void splitTriangles() {    // splits each tirangle into 4
-    for (int i=0; i<3*nt; i=i+3) {
-      V[3*nt+i]=v(i); 
-      V[n(3*nt+i)]=w(p(i)); 
-      V[p(3*nt+i)]=w(n(i));
-      V[6*nt+i]=v(n(i)); 
-      V[n(6*nt+i)]=w(i); 
-      V[p(6*nt+i)]=w(p(i));
-      V[9*nt+i]=v(p(i)); 
-      V[n(9*nt+i)]=w(n(i)); 
-      V[p(9*nt+i)]=w(i);
-      V[i]=w(i); 
-      V[n(i)]=w(n(i)); 
-      V[p(i)]=w(p(i));
-    };
-    nt=4*nt; 
-    nc=3*nt;
-  };
-
-  void refine() { 
-    updateON(); 
-    splitEdges(); 
-    bulge(); 
-    splitTriangles(); 
-    updateON();
-  }
 
   //  ========================================================== FILL HOLES ===========================================
   void fanHoles() {
@@ -1419,132 +1079,6 @@ class Mesh {
     nv++;  
     nc=3*nt;  // update vertex count and corner count
   };
-
-  // =========================================== GEODESIC MEASURES, DISTANCES =============================
-  void computeDistance(int maxr) { // marks vertices and triangles at a graph distance of maxr
-    int tc=0; // triangle counter
-    int r=1; // ring counter
-    for (int i=0; i<nt; i++) {
-      Mt[i]=0;
-    };  // unmark all triangles
-    Mt[t(cc)]=1; 
-    tc++;                   // mark t(cc)
-    for (int i=0; i<nv; i++) {
-      Mv[i]=0;
-    };  // unmark all vertices
-    while ( (tc<nt)&&(r<=maxr)) {  // while not finished
-      for (int i=0; i<nc; i++) {
-        if ((Mv[v(i)]==0)&&(Mt[t(i)]==r)) {
-          Mv[v(i)]=r;
-        };
-      };  // mark vertices of last marked triangles
-      for (int i=0; i<nc; i++) {
-        if ((Mt[t(i)]==0)&&(Mv[v(i)]==r)) {
-          Mt[t(i)]=r+1; 
-          tc++;
-        };
-      }; // mark triangles incident on last marked vertices
-      r++; // increment ring counter
-    };
-    rings=r; // sets ring variable for rendring?
-  }
-
-  void computeIsolation() {
-    println("Starting isolation computation for "+nt+" triangles");
-    for (int i=0; i<nt; i++) {
-      SMt[i]=0;
-    }; 
-    for (int c=0; c<nc; c+=3) {
-      println("  triangle "+t(c)+"/"+nt); 
-      computeDistance(1000); 
-      for (int j=0; j<nt; j++) {
-        SMt[j]+=Mt[j];
-      };
-    };
-    int L=SMt[0], H=SMt[0];  
-    for (int i=0; i<nt; i++) { 
-      H=max(H, SMt[i]); 
-      L=min(L, SMt[i]);
-    }; 
-    if (H==L) {
-      H++;
-    };
-    cc=0; 
-    for (int i=0; i<nt; i++) {
-      Mt[i]=(SMt[i]-L)*255/(H-L); 
-      if (Mt[i]>Mt[t(cc)]) {
-        cc=3*i;
-      };
-    }; 
-    rings=255;
-    for (int i=0; i<nv; i++) {
-      Mv[i]=0;
-    };  
-    for (int i=0; i<nc; i++) {
-      Mv[v(i)]=max(Mv[v(i)], Mt[t(i)]);
-    };
-    println("finished isolation");
-  }
-
-  void computePath() {                 // graph based shortest path between t(c0 and t(prevc), prevc is the previously picekd corner
-    for (int i=0; i<nt; i++) {
-      Mt[i]=0;
-    }; // reset marking
-    Mt[t(sc)]=1; // Mt[0]=1;            // mark seed triangle
-    for (int i=0; i<nc; i++) {
-      P[i]=false;
-    }; // reset corners as not visited
-    int r=1;
-    boolean searching=true;
-    while (searching) {
-      for (int i=0; i<nc; i++) {
-        if (searching&&(Mt[t(i)]==0)&&(!b(i))) { // t(i) is an unvisited triangle and i is not facing a border edge
-          if (Mt[t(o(i))]==r) { // if opposite triangle is ring r
-            Mt[t(i)]=r+1; // mark (invade) t(i) as part of ring r+1
-            P[i]=true;    // mark corner i as visited
-            if (t(i)==t(cc)) {
-              searching=false;
-            }; // if we reached the end?
-          };
-        };
-      };
-      r++;
-    };
-    for (int i=0; i<nt; i++) {
-      Mt[i]=0;
-    };  // graph distance between triangle and t(c)
-    rings=1;      // track ring number
-    int b=cc;
-    int k=0;
-    while (t (b)!=t(sc)) { // back track
-      rings++;  
-      if (P[b]) {
-        b=o(b); 
-        print(".o");
-      } 
-      else {
-        if (P[p(b)]) {
-          b=r(b);
-          print(".r");
-        } 
-        else {
-          b=l(b);
-          print(".l");
-        };
-      }; 
-      Mt[t(b)]=rings;
-    };
-  }
-
-  void  showDistance() {
-    noStroke(); 
-    for (int t=0; t<nt; t++) if (Mt[t]!=0) {
-      fill(ramp(Mt[t], rings)); 
-      showShrunkOffsetT(t, 1, 1);
-    }; 
-    noFill();
-  } 
-
 
   //  ==========================================================  GARBAGE COLLECTION ===========================================
   void clean() {
@@ -1716,38 +1250,36 @@ class Mesh {
       }
     }
     averageValence = (float)totalValence / nv;
-    print("Max valence " + maxValence + "\n");
+    print("Max valence " + maxValence + "\n");  
+  }
+  
+  void initTables(String[] vtsFile)
+  {
+    nv = int(vtsFile[0]);
+    nt = int(vtsFile[nv+1]); 
+    nc=3*nt;
+
+    // primary tables
+    V = new int [3*nt];               // V table (triangle/vertex indices)
+    O = new int [3*nt];               // O table (opposite corner indices)
+    G = new pt [nv];                   // geometry table (vertices)
+  
+    // auxiliary tables for bookkeeping
+    cm = new int[3*nt];               // corner markers: 
+    vm = new int[nv];               // vertex markers: 0=not marked, 1=interior, 2=border, 3=non manifold
+    tm = new int[nt];               // triangle markers: 0=not marked, 
+    cm2 = new int[nt];               // triangle markers: 0=not marked, 
+
+    visible = new boolean[nt];    // set if triangle visible
     
-    /*for (int i = 0; i < nv; i++)
-    {
-      vm[i] = 0;
-    }
-    int[] valenceBin = new int[maxValence+1];
-    for (int i = 0; i < maxValence+1; i++)
-    {
-      valenceBin[i] = 0;
-    }
-    for (int i = 0; i < nc; i++)
-    {
-      if (vm[v(i)] == 0)
-      {
-        vm[v(i)] = 1;
-        int valence = getValence(i);
-        valenceBin[valence]++;
-      }      
-    }
-    
-    print("Stats num vertices " + nv + " num triangles " + nt + " islands " + numIsland + " channels " + numChannel + " others " + numOthers + " average valence " + averageValence + " max valence " + maxValence + "\n");
-    for (int i = 0; i < maxValence+1; i++)
-    {
-      print("Valence" + i + " " + valenceBin[i] + " " + ((float)valenceBin[i]/nv) * 100 + "\n");
-    }
-    resetMarkers(); */
+    m_tOffsets = new int[nt]; //Storing the T offsets for propagating down LOD's. TODO msati3: better approach?
+    declareVectors();
   }
 
   void loadMeshVTS(String fn, int scale) {
     println("loading: "+fn); 
     String [] ss = loadStrings(fn);
+    initTables(ss);
     String subpts;
     int s=0;   
     int comma1, comma2;   
@@ -1763,12 +1295,7 @@ class Mesh {
       comma2=rest.indexOf(',');    
       y=float(rest.substring(0, comma2)); 
       z=float(rest.substring(comma2+1, rest.length()));
-      //G[k].set(x, y, z);
       G[k].set(x * scale, y * scale, z * scale);
-      if (k == nv-1)
-      {
-        print(x + " " + y + " " + z + "\n");
-      }
     };
     s=nv+1;
     nt = int(ss[s]); 
@@ -1786,9 +1313,6 @@ class Mesh {
       V[3*k]=a;  
       V[3*k+1]=b;  
       V[3*k+2]=c;
-      /*V[3*k]=a-1;  
-      V[3*k+1]=b-1;  
-      V[3*k+2]=c-1;*/
     }
     initVBO();
   };
@@ -1933,76 +1457,6 @@ class Mesh {
   void initVBO()
   {
     initVBO(0); //static mesh
-  }
-
-  // ============================================================= CUT =======================================================
-  void cut(pt[] CP, int ncp) {
-    if (ncp<3) return;
-    for (int t=0; t<nt; t++) {
-      tm[t]=0;
-    }; // reset triangle markings are not in ring
-    int[] cc = new int[ncp]; // closest corners
-    for (int i=0; i<ncp; i++) cc[i]=closestCorner(CP[i+1]);
-    traceRing(cc, ncp); // marks triangles on ring through control points
-  }
-
-  void invade(int om, int nm, int s) { // grows region  tm[t]=nm by invading triangles where tm[t]==om
-    Boolean found=true;
-    while (found) {
-      found=false;
-      for (int c=0; c<nc; c++) 
-        if ( tm[t(c)]==om && tm[t(o(c))]==nm) {
-          tm[t(c)]=nm; 
-          found=true;
-        }
-    }
-  }
-  void showPebbles() {
-    noStroke(); 
-    fill(magenta); 
-    for (int c=0; c<nc; c++) if (P[c]) show(cg(c), 2);
-  }
-
-  void traceRing(int[] cc, int ncp) { // computes ring of triangles that visits corners cc
-    markPath(cc[ncp-1], cc[0]); 
-    for (int i=0; i<ncp-1; i++) markPath( cc[i], cc[i+1] );
-  }
-
-  void markPath(int sc, int cc) {     // graph based shortest path between sc and cc
-    if (t(sc)==t(cc)) {
-      tm[t(sc)]=1; 
-      return;
-    }
-    for (int i=0; i<nt; i++) {
-      Mt[i]=0;
-    }; // reset marking of visited triangles
-    Mt[t(sc)]=1;                      // mark seed triangle
-    for (int i=0; i<nc; i++) {
-      P[i]=false;
-    }; // reset all corners as not having a parent
-    int r=1;
-    boolean searching=true;
-    while (searching) {
-      for (int i=0; i<nc; i++) {
-        if (searching&&(Mt[t(i)]==0)&&(!b(i))) { // t(i) is an unvisited triangle and i is not facing a border edge
-          if (Mt[t(o(i))]==r) { // if opposite triangle is ring r
-            Mt[t(i)]=r+1; // mark (invade) t(i) as part of ring r+1
-            P[i]=true;    // mark corner i as visited
-            if (t(i)==t(cc)) {
-              searching=false;
-            }; // if we reached the end?
-          };
-        };
-      };
-      r++;
-    };
-    int b=cc;
-    while (t (b)!=t(sc)) { // back track
-      if (P[b]) b=o(b);  
-      else if (P[p(b)]) b=r(b); 
-      else b=l(b);
-      tm[t(b)]=1;
-    };
   }
 
   void makeInvisible(int m) { 
@@ -2152,47 +1606,6 @@ class Mesh {
     while (tm[t (o (c))]!=mk) c=n(o(n(c)));
     return c;
   }  
-
-  float flattenStrip() { // flattens a particular triangle strip LLRLRLRLR
-    float [] x = new float [nv]; 
-    float [] y = new float [nv]; 
-    for (int c=2; c<nc; c+=3) {
-      pt A = g(n(c)); 
-      pt B = g(p(c)); 
-      pt C = g(c);
-      vec I = U(A, B); 
-      vec K=U(triNormal(t(o(c))));  
-      vec J=N(I, K); 
-      x[v(c)]=d(I, V(A, C)); 
-      y[v(c)]=d(J, V(A, C));
-    }
-    float d=d(G[v(0)], G[v(1)]);
-    G[v(0)]=P(0, 0, 0); 
-    G[v(1)]=P(d, 0, 0);
-    for (int c=2; c<nc; c+=3) {
-      pt A = g(n(c)); 
-      pt B = g(p(c)); 
-      vec I = U(A, B); 
-      vec K=V(0, 0, -1);  
-      vec J=N(I, K);
-      G[v(c)].set(P(A, x[v(c)], I, y[v(c)], J));
-    }
-    float minx=G[0].x, miny=G[0].y, maxx=G[0].x, maxy=G[0].y;
-    for (int i=1; i<nv; i++) { 
-      minx=min(minx, G[i].x); 
-      miny=min(miny, G[i].y); 
-      maxx=max(maxx, G[i].x); 
-      maxy=max(maxy, G[i].y);
-    }
-    float s=min(width/(maxx-minx), height/(maxy-miny))*.8;
-    float cx=(maxx+minx)/2; 
-    float cy=(maxy+miny)/2;
-    for (int i=0; i<nv; i++) { 
-      G[i].x=(G[i].x-cx)*s; 
-      G[i].y=(G[i].y-cy)*s;
-    }
-    return s;
-  } 
 
   //Interaction of mesh class with outside objects. TODO msati3: Better ways of handling this?
   void setViewport(Viewport viewport) {
