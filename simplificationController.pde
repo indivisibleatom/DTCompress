@@ -14,32 +14,53 @@ class SimplificationController
   int m_minMesh;
   int m_maxMesh;
 
-  SimplificationController()
+  SimplificationController(String type)
   {
     m_viewportManager = new ViewportManager();
+
     for ( int i = 0; i < c_numMeshes; i++ )
     {
       m_viewportManager.addViewport( new Viewport( (width/c_numMeshes)*i, 0, width/c_numMeshes, height ) );
     }
 
-    m_displayMeshes = new ArrayList<Mesh>();
-    m_islandMesh = new IslandMesh(); 
-    m_lodMapperManager = new SuccLODMapperManager();
-    m_baseMesh = null;
-    //m_islandMesh.loadMeshVTS("data/bigHorse.vts", 1);
-    m_islandMesh.loadMeshVTS("data/angel.vts", 100);
-    g_totalVertices = m_islandMesh.nv;
-    checkCorrect();
-    m_islandMesh.updateON(); // computes O table and normals
-    m_islandMesh.resetMarkers(); // resets vertex and tirangle markers
-    m_islandMesh.computeBox();
-    print("Box " + m_islandMesh.Cbox.x + " " + m_islandMesh.Cbox.y + " " + m_islandMesh.Cbox.z + "\n");
-    m_minMesh = 0;
-    m_maxMesh = -1;
-    onMeshAdded(m_islandMesh);
-    //m_displayMeshes.add(m_islandMesh);
-    //m_viewportManager.registerMeshToViewport( m_islandMesh, 0 );
-    for (int i=0; i<20; i++) vis[i]=true; // to show all types of triangles
+    if ( type == "preprocess" ) 
+    {
+      m_displayMeshes = new ArrayList<Mesh>();
+      m_islandMesh = new IslandMesh(); 
+      m_lodMapperManager = new SuccLODMapperManager();
+      m_baseMesh = null;
+      m_islandMesh.loadMeshVTS("data/bigHorse.vts", 1);
+      //m_islandMesh.loadMeshVTS("data/angel.vts", 100);
+      g_totalVertices = m_islandMesh.nv;
+      checkCorrect();
+      m_islandMesh.updateON(); // computes O table and normals
+      m_islandMesh.resetMarkers(); // resets vertex and tirangle markers
+      m_islandMesh.computeBox();
+      print("Box " + m_islandMesh.Cbox.x + " " + m_islandMesh.Cbox.y + " " + m_islandMesh.Cbox.z + "\n");
+      m_minMesh = 0;
+      m_maxMesh = -1;
+      onMeshAdded(m_islandMesh);
+      //m_displayMeshes.add(m_islandMesh);
+      //m_viewportManager.registerMeshToViewport( m_islandMesh, 0 );
+      for (int i=0; i<20; i++) vis[i]=true; // to show all types of triangles
+    }
+    else if ( type == "server" )
+    {
+      m_baseMesh = new Mesh();
+      m_baseMesh.loadMeshVTS("simplified.vts", 1);
+      PacketFetcher fetcher = new PacketFetcher( "serializedPacket", 7 );
+      m_workingMesh = new WorkingMesh( m_baseMesh, m_lodMapperManager, fetcher );
+      m_workingMeshClient = new WorkingMeshClient( m_baseMesh, m_workingMesh );
+      m_workingMesh.initWorkingMesh();
+      m_workingMeshClient.initWorkingMesh();
+
+      m_workingMeshClient.resetMarkers();
+      m_workingMeshClient.computeBox();
+
+      setWorkingMesh();
+      
+      print("Done everything");
+    }
   }
 
   void checkCorrect()
@@ -125,7 +146,8 @@ class SimplificationController
         else
         {
           m_lodMapperManager.propagateNumberings();
-          m_workingMesh = new WorkingMesh( m_baseMesh, m_lodMapperManager );
+          
+          m_workingMesh = new WorkingMesh( m_baseMesh, m_lodMapperManager, null );
           m_workingMeshClient = new WorkingMeshClient( m_baseMesh, m_workingMesh );
           m_workingMesh.initWorkingMesh();
           m_workingMeshClient.initWorkingMesh();
@@ -134,6 +156,9 @@ class SimplificationController
           m_workingMeshClient.computeBox();
 
           setWorkingMesh();
+
+          m_workingMeshClient.saveMeshVTS("simplified.vts");
+          m_lodMapperManager.serializeExpansionPackets();
         }
         currentLOD--;
       }
@@ -169,7 +194,7 @@ class SimplificationController
       if ( m_lodMapperManager.fMaxSimplified() )
       {
         m_lodMapperManager.propagateNumberings();
-        m_workingMesh = new WorkingMesh( m_baseMesh, m_lodMapperManager );
+        m_workingMesh = new WorkingMesh( m_baseMesh, m_lodMapperManager, null );
         m_workingMeshClient = new WorkingMeshClient( m_baseMesh, m_workingMesh );
         m_workingMesh.resetMarkers();
         m_workingMesh.markExpandableVerts();

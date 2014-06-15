@@ -36,18 +36,18 @@ class WorkingMesh extends Mesh
 
   PacketFetcher m_packetFetcher;  
 
-  WorkingMesh( Mesh m, SuccLODMapperManager lodMapperManager )
+  WorkingMesh( Mesh m, SuccLODMapperManager lodMapperManager, PacketFetcher packetFetcher )
   {
     reserveSpace();
     m.copyTo(this);
     
     m_expandBits = new ArrayList<Boolean>();
     m_expandVertices = new ArrayList<pt>();
+    m_packetFetcher = packetFetcher;
 
     m_baseVerts = nv;
     m_baseTriangles = nt;
     m_userInputHandler = new WorkingMeshUserInputHandler(this);
-    m_packetFetcher = new PacketFetcher(lodMapperManager);
     m_triangleColorMap = new int[10];
     m_triangleColorMap[0] = formColor(green, 255);
     m_triangleColorMap[1] = formColor(yellow, 255);
@@ -669,7 +669,7 @@ class WorkingMesh extends Mesh
               {
                 expandArray[vertex] = true;
                 numExpandable++;
-              }              
+              }
             }
           }
           numValidExpandable++;
@@ -787,7 +787,7 @@ class WorkingMesh extends Mesh
   
   void onDoneExpand()
   {
-    markExpandableVerts();
+    //markExpandableVerts();
     
     initVBO(1);
     updateColorsVBO(255);

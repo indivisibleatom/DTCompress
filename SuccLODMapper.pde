@@ -63,6 +63,15 @@ class SuccLODMapperManager
       m_sucLODMapper[i].createEdgeExpansionPacket( ( (i == NUMLODS-1)?null : m_sucLODMapper[i+1]), m_sucLODMapper[NUMLODS-1].getBaseTriangles() );
     }
   }
+  
+  void serializeExpansionPackets()
+  {
+    for (int i = 0; i < NUMLODS; i++)
+    {    
+      SuccLODMapper mapper = getMapperForLOD(i);
+      mapper.serialize("serializedPacket"+i+".dat");
+    }
+  }
 }
 
 class SuccLODMapper
@@ -76,8 +85,8 @@ class SuccLODMapper
 
   private int []m_vertexNumberings;  //Mapping from the vertices ordered correctly (3i,3i+1,..) according to the base mesh to the actual vertex numbers in the main mesh > used to transition from one LOD to another.
   private int []m_triangleNumberings;  //Mapping from the triangles ordered correctly (N+4i,4i+1,...) according to the base mesh to the actual triangles numbers in the main mesh > used to transition from one LOD to another.
-  private pt []m_GExpansionPacket;
-  private boolean []m_edgeExpansionPacket;
+  private HashMap<Integer, pt> m_GExpansionPacket;
+  private BitSet m_edgeExpansionPacket;
 
   private int[] m_refinedTriangleToOrderedTriangle;
   private int[] m_refinedTriangleToAssociatedVertexNumber;
@@ -99,12 +108,44 @@ class SuccLODMapper
   
   pt getGeometry( int index )
   {
-    return m_GExpansionPacket[index];
+    return m_GExpansionPacket.get(index);
   }
   
   boolean getConnectivity( int index )
   {
-    return m_edgeExpansionPacket[index];
+    return m_edgeExpansionPacket.get(index);
+  }
+  
+  void serialize( String fileName )
+  {
+    FileWriter writer;
+    print("Serializing");
+    try
+    {
+      writer = new FileWriter( fileName );
+      
+      for (int i = 0; i < m_vertexNumberings.length; i++)
+      {
+        pt p = getGeometry(i);
+        if ( p != null )
+        {
+          writer.write( i + " " + p.x + " " + p.y + " " + p.z + "\n");
+        }
+        else
+        {
+          writer.write( i + " " + "null" + "\n" );
+        }
+      }
+      for (int i = 0; i < m_edgeExpansionPacket.size(); i++)   
+      {
+        writer.write( m_edgeExpansionPacket.get(i)? 1 : 0 );
+      }
+    }
+    catch ( Exception ex )
+    {
+      print("There was an exception!!\n");
+      return;
+    }
   }
   
   void setRefinedMesh( Mesh refined )
@@ -289,12 +330,10 @@ class SuccLODMapper
     if ( parent == null )
     {
       int maxTriangleNumber = numBaseTriangles + 4*m_base.nv;
-      m_edgeExpansionPacket = new boolean[3*maxTriangleNumber];
+      m_edgeExpansionPacket = new BitSet(3*maxTriangleNumber);
+      m_edgeExpansionPacket.clear();
       m_triangleNumberings = new int[maxTriangleNumber];
-      for (int i = 0; i < m_edgeExpansionPacket.length; i++)
-      {
-        m_edgeExpansionPacket[i] = false;
-      }
+
       for (int i = 0; i < numBaseTriangles; i++)
       {
         m_triangleNumberings[i] = m_tBaseToRefinedTMap[i];
@@ -322,12 +361,10 @@ class SuccLODMapper
     else
     {
       int maxTriangleNumber = parent.m_triangleNumberings.length + 4*parent.m_vertexNumberings.length;
-      m_edgeExpansionPacket = new boolean[3*maxTriangleNumber];
-      for (int i = 0; i < m_edgeExpansionPacket.length; i++)
-      {
-        m_edgeExpansionPacket[i] = false;
-      }
+      m_edgeExpansionPacket = new BitSet(3*maxTriangleNumber);
+      m_edgeExpansionPacket.clear();
       m_triangleNumberings = new int[maxTriangleNumber];
+
       for (int i = 0; i < parent.m_triangleNumberings.length; i++)
       {
         if ( parent.m_triangleNumberings[i] == -1 )
@@ -477,9 +514,9 @@ class SuccLODMapper
         int t2 = getTriangleNumbering(refTriangle2);
         int t3 = getTriangleNumbering(refTriangle3);
         
-        m_edgeExpansionPacket[3*t1 + offset1] = true;
-        m_edgeExpansionPacket[3*t2 + offset2] = true;
-        m_edgeExpansionPacket[3*t3 + offset3] = true;        
+        m_edgeExpansionPacket.set(3*t1 + offset1, true);
+        m_edgeExpansionPacket.set(3*t2 + offset2, true);
+        m_edgeExpansionPacket.set(3*t3 + offset3, true);
       }
     }
   }
@@ -526,14 +563,13 @@ class SuccLODMapper
         vertexNumberings[i] = i;
       }
       m_vertexNumberings = new int[3*m_base.nv];
-      m_GExpansionPacket = new pt[3*m_base.nv];
     }
     else
     {
       vertexNumberings = parent.m_vertexNumberings;
       m_vertexNumberings = new int[3*vertexNumberings.length];
-      m_GExpansionPacket = new pt[3*vertexNumberings.length];
     }
+    m_GExpansionPacket = new HashMap<Integer, pt>();
     
     //Order the G entries correctly
     int[] minTPerVBase = new int[m_base.nv]; //Stores the min T incident on the base vertices
@@ -599,12 +635,11 @@ class SuccLODMapper
       {
         if (m_baseToRefinedVMap[vertexNumberings[i]][j] == -1)
         {
-          m_GExpansionPacket[3*i+j] = null;
           m_vertexNumberings[3*i+j] = m_baseToRefinedVMap[vertexNumberings[i]][0];
         }
         else
         {
-          m_GExpansionPacket[3*i+j] = P(m_refined.G[m_baseToRefinedVMap[vertexNumberings[i]][j]]);
+          m_GExpansionPacket.put(3*i+j, P(m_refined.G[m_baseToRefinedVMap[vertexNumberings[i]][j]]) );
           m_vertexNumberings[3*i+j] = m_baseToRefinedVMap[vertexNumberings[i]][j];
         }
       }
