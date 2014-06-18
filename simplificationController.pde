@@ -17,6 +17,7 @@ class SimplificationController
   SimplificationController(String type)
   {
     m_viewportManager = new ViewportManager();
+    m_displayMeshes = new ArrayList<Mesh>();
 
     for ( int i = 0; i < c_numMeshes; i++ )
     {
@@ -25,68 +26,45 @@ class SimplificationController
 
     if ( type == "preprocess" ) 
     {
-      m_displayMeshes = new ArrayList<Mesh>();
       m_islandMesh = new IslandMesh(); 
       m_lodMapperManager = new SuccLODMapperManager();
       m_baseMesh = null;
-      m_islandMesh.loadMeshVTS("data/bigHorse.vts", 1);
+      m_islandMesh.loadMeshVTS("data/horseSub.vts", 1);
       //m_islandMesh.loadMeshVTS("data/angel.vts", 100);
       g_totalVertices = m_islandMesh.nv;
-      checkCorrect();
+      
       m_islandMesh.updateON(); // computes O table and normals
       m_islandMesh.resetMarkers(); // resets vertex and tirangle markers
       m_islandMesh.computeBox();
-      print("Box " + m_islandMesh.Cbox.x + " " + m_islandMesh.Cbox.y + " " + m_islandMesh.Cbox.z + "\n");
+
       m_minMesh = 0;
       m_maxMesh = -1;
       onMeshAdded(m_islandMesh);
-      //m_displayMeshes.add(m_islandMesh);
-      //m_viewportManager.registerMeshToViewport( m_islandMesh, 0 );
       for (int i=0; i<20; i++) vis[i]=true; // to show all types of triangles
     }
     else if ( type == "server" )
     {
       m_baseMesh = new Mesh();
-      m_baseMesh.loadMeshVTS("simplified.vts", 1);
+      m_baseMesh.deserializeVTS("simplified.vts");
+      m_baseMesh.resetMarkers(); // resets vertex and tirangle markers
+      m_baseMesh.computeBox();
+
       PacketFetcher fetcher = new PacketFetcher( "serializedPacket", 7 );
+      
       m_workingMesh = new WorkingMesh( m_baseMesh, m_lodMapperManager, fetcher );
       m_workingMeshClient = new WorkingMeshClient( m_baseMesh, m_workingMesh );
+      print("Done creating meshes meshes\n");   
+
       m_workingMesh.initWorkingMesh();
       m_workingMeshClient.initWorkingMesh();
+      print("Done initing meshes\n");   
 
       m_workingMeshClient.resetMarkers();
-      m_workingMeshClient.computeBox();
 
-      setWorkingMesh();
-      
-      print("Done everything");
+      m_minMesh = 0;
+      m_maxMesh = -1;
+      onMeshAdded(m_workingMesh);
     }
-  }
-
-  void checkCorrect()
-  {
-    print("On swinging " + m_islandMesh.s( 20000 ) + "\n");
-    /*int totalTimes = 0;
-     for (int i = 0; i < m_islandMesh.nc; i++)
-     {
-     int currentCorner = i;
-     int numTimes = 0;
-     if (totalTimes > 100)
-     {
-     break;
-     }
-     do
-     {
-     numTimes++;
-     if ( numTimes > 100 )
-     {
-     totalTimes++;
-     print("More than 100 times at corner " + i + " " + currentCorner + "\n" );
-     break;
-     }
-     currentCorner = m_islandMesh.s( currentCorner );
-     } while ( currentCorner != i );
-     }*/
   }
 
   ViewportManager viewportManager()
@@ -157,7 +135,7 @@ class SimplificationController
 
           setWorkingMesh();
 
-          m_workingMeshClient.saveMeshVTS("simplified.vts");
+          m_workingMeshClient.serializeVTS("simplified.vts");
           m_lodMapperManager.serializeExpansionPackets();
         }
         currentLOD--;
@@ -166,11 +144,11 @@ class SimplificationController
 
     if (keyPressed&&key=='h')
     {
-      int corner = m_displayMeshes.get(m_minMesh + m_viewportManager.getSelectedViewport()).cc;
+      /*int corner = m_displayMeshes.get(m_minMesh + m_viewportManager.getSelectedViewport()).cc;
       if ( m_workingMesh != null &&  m_viewportManager.getSelectedViewport() == c_numMeshes-1 )
       {
-        //m_lodMapperManager.getLODMapperForBaseMeshNumber(m_minMesh + m_viewportManager.getSelectedViewport()).printVertexMapping(corner, m_minMesh + m_viewportManager.getSelectedViewport());
-        m_workingMesh.printVerticesSelected();
+        m_lodMapperManager.getLODMapperForBaseMeshNumber(m_minMesh + m_viewportManager.getSelectedViewport()).printVertexMapping(corner, m_minMesh + m_viewportManager.getSelectedViewport());
+        //m_workingMesh.printVerticesSelected();
       }
       else
       {
@@ -178,7 +156,7 @@ class SimplificationController
         {
           //m_lodMapperManager.getLODMapperForBaseMeshNumber(m_minMesh + m_viewportManager.getSelectedViewport()).printVertexMapping(corner, m_minMesh + m_viewportManager.getSelectedViewport());
         }
-      }
+      }*/
     }
     else if (key=='p')  //Create base mesh and register it to other viewport archival
     {

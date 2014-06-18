@@ -61,11 +61,14 @@ class WorkingMesh extends Mesh
 
     for (int i = 0; i < m.nv; i++)
     {
-      FutureLODAndVOrder future = getLODAndVAge( NUMLODS - 1, i );
-      m_deathLOD[i] = future.lod();
-      m_birthLOD[i] = NUMLODS - 1;
-      m_deathAge[i] = future.orderV();
-      m_descendedFrom[i] = i;
+      if (m_packetFetcher != null)
+      {
+        FutureLODAndVOrder future = getLODAndVAge( NUMLODS - 1, i );
+        m_deathLOD[i] = future.lod();
+        m_birthLOD[i] = NUMLODS - 1;
+        m_deathAge[i] = future.orderV();
+        m_descendedFrom[i] = i;
+      }
     }   
   }
   
@@ -93,7 +96,7 @@ class WorkingMesh extends Mesh
   {
     initVBO(1);
     resetMarkers();
-    markExpandableVerts();
+    //markExpandableVerts();
     computeBox();
     updateColorsVBO(255);
   }
@@ -395,7 +398,7 @@ class WorkingMesh extends Mesh
   
   public void onExpansionRequest()
   {
-    expandMesh();
+    expandMesh();    
   }
   
   public Boolean[] getExpansionBits()
@@ -422,6 +425,7 @@ class WorkingMesh extends Mesh
     int totalBitsNothing = 0;
     int countFalse = 0;
     int countTrue = 0;
+    
     while (currentLODWave >= 0)
     {
       numExpandable = 0;
@@ -612,7 +616,7 @@ class WorkingMesh extends Mesh
     ArrayList<Integer> expandedCorners;
     descendedCorners.add(corner);
 
-    while (currentLODWave >= 0)
+    while (currentLODWave >= 4)
     {
       numExpandable = 0;
       expandArray = new boolean[nv];

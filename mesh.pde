@@ -371,7 +371,7 @@ class Mesh {
   } // picks corner of closest vertex to X
   void pickc (pt X) {
     int origCC = cc;
-    for (int b=0; b<nc; b++) if (V[b] != -1 && vis[tm[t(b)]] && visible[t(b)]) if (d(X, cg(b))<d(X, cg(cc)) ) {
+    for (int b=0; b<nc; b++) if (V[b] != -1 && visible[t(b)]) if (d(X, cg(b))<d(X, cg(cc)) ) {
       cc=b; 
       pc=b;
     }
@@ -1169,6 +1169,62 @@ class Mesh {
 
   // ============================================================= ARCHIVAL ============================================================
   boolean flipOrientation=false;            // if set, save will flip all triangles
+  
+  void serializeVTS(String fileName)
+  {
+    String [] inppts = new String [nv+1+nc+1];
+    int s=0;
+    inppts[s++]=str(nv);
+
+    for (int i=0; i<nv; i++) 
+    {
+      inppts[s++]=str(G[i].x)+","+str(G[i].y)+","+str(G[i].z);
+    }
+    inppts[s++]=str(nt);
+    for (int i = 0; i < nc; i++)
+    {
+      inppts[s++]=str(V[i])+","+str(O[i]);
+    }
+    saveStrings(fileName, inppts);
+  }
+  
+  void deserializeVTS(String fn)
+  {
+    String [] ss = loadStrings(fn);
+    initTables(ss);
+    float scale = 1;
+    String subpts;
+    int s=0;
+    int comma1, comma2;   
+    float x, y, z;   
+    int a, b;
+    nv = int(ss[s++]);
+    for (int k=0; k<nv; k++) {
+      int i=k+s; 
+      comma1=ss[i].indexOf(',');   
+      x=float(ss[i].substring(0, comma1));
+      String rest = ss[i].substring(comma1+1, ss[i].length());
+      comma2=rest.indexOf(',');    
+      y=float(rest.substring(0, comma2)); 
+      z=float(rest.substring(comma2+1, rest.length()));
+      G[k].set(x * scale, y * scale, z * scale);
+    };
+    s=nv+1;
+    nt = int(ss[s]); 
+    nc=3*nt;
+    println(", nt="+nt);
+    s++;
+    for (int k=0; k<nc; k++) {
+      int i=k+s;
+      comma1=ss[i].indexOf(',');   
+      a=int(ss[i].substring(0, comma1));  
+      String rest = ss[i].substring(comma1+1, ss[i].length()); 
+      b=int(rest); 
+      V[k]=a;  
+      O[k]=b;  
+    }
+    initVBO();
+  }
 
   void saveMeshVTS() {
     String savePath = selectOutput("Select or specify .vts file where the mesh will be saved");  // Opens file chooser

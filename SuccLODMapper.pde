@@ -136,10 +136,13 @@ class SuccLODMapper
           writer.write( i + " " + "null" + "\n" );
         }
       }
+      print("number of bits in expansionpacket " +  m_edgeExpansionPacket.size() + "\n");
       for (int i = 0; i < m_edgeExpansionPacket.size(); i++)   
       {
-        writer.write( m_edgeExpansionPacket.get(i)? 1 : 0 );
+        writer.write( m_edgeExpansionPacket.get(i) ? '1' : '0' );
       }
+      writer.write( "\n" );
+      writer.flush();
     }
     catch ( Exception ex )
     {
@@ -330,6 +333,7 @@ class SuccLODMapper
     if ( parent == null )
     {
       int maxTriangleNumber = numBaseTriangles + 4*m_base.nv;
+      print("Number of bits of expansion = " + 3*maxTriangleNumber);
       m_edgeExpansionPacket = new BitSet(3*maxTriangleNumber);
       m_edgeExpansionPacket.clear();
       m_triangleNumberings = new int[maxTriangleNumber];
@@ -361,6 +365,8 @@ class SuccLODMapper
     else
     {
       int maxTriangleNumber = parent.m_triangleNumberings.length + 4*parent.m_vertexNumberings.length;
+      print("Number of bits of expansion = " + 3*maxTriangleNumber);
+
       m_edgeExpansionPacket = new BitSet(3*maxTriangleNumber);
       m_edgeExpansionPacket.clear();
       m_triangleNumberings = new int[maxTriangleNumber];

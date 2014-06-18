@@ -13,6 +13,7 @@ class PacketFetcher
     {
       for (int i = 0; i < numLODs; i++)
       {
+        print("Reading and creating for file" + i + "\n");
         m_GExpansionPacket[i] = new HashMap<Integer, pt>();
         reader = new FileReader( "C:/Users/Mukul/Desktop/viewer/"+fileName+i+".dat");
         int ch;
@@ -26,17 +27,22 @@ class PacketFetcher
           else
           {
             String readString = readStringBuilder.toString();
-            if ( readString.charAt(0) == 0 || readString.charAt(0) == 1 )
+            String[] strings = readString.split(" ");
+            if (strings.length == 1)
             {
-              m_edgeExpansionPacket[i] = new BitSet( readString.length() );
-              for (int j = 0; j < readString.length(); j++)
+              if ( readString.charAt(0) == '0' || readString.charAt(0) == '1' )
               {
-                m_edgeExpansionPacket[i].set( j, readString.charAt(j) == 0? false:true );
+                m_edgeExpansionPacket[i] = new BitSet( readString.length() );
+                m_edgeExpansionPacket[i].clear();
+                for (int j = 0; j < readString.length(); j++)
+                {
+                  m_edgeExpansionPacket[i].set( j, readString.charAt(j) == '0'? false:true );
+                }
+                print("Number of bits read " + readString.length());
               }
             }
             else
             {
-              String[] strings = readString.split(" ");
               if ( !strings[1].equals("null") )
               {
                 int index = Integer.parseInt( strings[0] );
@@ -53,6 +59,7 @@ class PacketFetcher
     {
       print("Exception while reading! Packetfetcher " + "C:/Users/Mukul/Desktop/viewer/"+fileName+".dat" + "\n");
     }
+    print("Done reading and creating \n");
   }
 
   pt getGeometry( int LOD, int index )
