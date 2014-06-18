@@ -493,10 +493,28 @@ class SuccLODMapper
     {
       changeCorners( currestLowestCorner, offset );
     }
-  }  
+  }
+  
+  private void populateTriangleNumberings( int[] triangleNumberings )
+  {
+    for (int i = 0; i < m_triangleNumberings.length; i++)
+    {
+      if (m_triangleNumberings[i] != -1 && triangleNumberings[m_triangleNumberings[i]] == -1)
+      {
+        triangleNumberings[m_triangleNumberings[i]] = i;
+      }
+    }    
+  }
   
   private void createEdgeExpansionPacket(SuccLODMapper parent, int numBaseTriangles)
   {
+    int[] triangleNumberings = new int[m_refined.nt];
+    for (int i = 0; i < m_refined.nt; i++)
+    {
+      triangleNumberings[i] = -1;
+    }
+    populateTriangleNumberings( triangleNumberings );
+    
     for (int i = 0; i < m_refined.nt; i++)
     {
       if ( m_refined.tm[i] == ISLAND )
@@ -516,9 +534,9 @@ class SuccLODMapper
         int refTriangle3 = m_refined.t(m_refined.u(swingCorner3));
         int offset3 = getEdgeOffset(m_refined.u(swingCorner3));
         
-        int t1 = getTriangleNumbering(refTriangle1);
-        int t2 = getTriangleNumbering(refTriangle2);
-        int t3 = getTriangleNumbering(refTriangle3);
+        int t1 = triangleNumberings[refTriangle1];
+        int t2 = triangleNumberings[refTriangle2];
+        int t3 = triangleNumberings[refTriangle3];
         
         m_edgeExpansionPacket.set(3*t1 + offset1, true);
         m_edgeExpansionPacket.set(3*t2 + offset2, true);
