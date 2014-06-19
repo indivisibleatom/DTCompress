@@ -645,6 +645,25 @@ class Mesh {
     fill(dred); 
     showCorner(cc, 3);
   } // displays corner markers
+  
+  void checkMesh()
+  {
+    for (int i = 0; i < nc; i++)
+    {
+      int currentCorner = i;
+      int valence = 0;
+      do
+      {
+        valence++;
+        currentCorner = s(currentCorner);
+        if ( valence > 100 )
+        {
+          print("Incorrect mesh \n" + v(i));
+          return;
+        }
+      } while ( currentCorner != i );
+    }
+  }
 
   // ============================================= DISPLAY VERTICES =======================================
   void showVertices() {

@@ -29,13 +29,14 @@ class SimplificationController
       m_islandMesh = new IslandMesh(); 
       m_lodMapperManager = new SuccLODMapperManager();
       m_baseMesh = null;
-      m_islandMesh.loadMeshVTS("data/bigHorse.vts", 1);
-      //m_islandMesh.loadMeshVTS("data/angel.vts", 100);
+      //m_islandMesh.loadMeshVTS("data/bigHorse.vts", 1);
+      m_islandMesh.loadMeshVTS("data/ramses.vts", 1);
       g_totalVertices = m_islandMesh.nv;
       
       m_islandMesh.updateON(); // computes O table and normals
       m_islandMesh.resetMarkers(); // resets vertex and tirangle markers
       m_islandMesh.computeBox();
+      m_islandMesh.checkMesh();
 
       m_minMesh = 0;
       m_maxMesh = -1;
@@ -135,8 +136,8 @@ class SimplificationController
 
           setWorkingMesh();
 
-          m_workingMeshClient.serializeVTS("simplified.vts");
-          m_lodMapperManager.serializeExpansionPackets();
+          //m_workingMeshClient.serializeVTS("simplified.vts");
+          //m_lodMapperManager.serializeExpansionPackets();
         }
         currentLOD--;
       }

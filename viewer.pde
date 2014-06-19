@@ -32,8 +32,8 @@ void setup()
   pgl = (PGraphicsOpenGL) g;
   gl = pgl.beginGL();  pgl.endGL();
   
-  //g_controller = new SimplificationController("preprocess"); //The controlling object for the project
-  g_controller = new SimplificationController("server"); //The controlling object for the project
+  g_controller = new SimplificationController("preprocess"); //The controlling object for the project
+  //g_controller = new SimplificationController("server"); //The controlling object for the project
   //g_controller = new SimplificationController("client"); //The controlling object for the project
 }
 
